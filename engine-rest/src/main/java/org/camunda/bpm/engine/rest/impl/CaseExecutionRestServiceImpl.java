@@ -14,6 +14,7 @@ import org.camunda.bpm.engine.rest.sub.runtime.CaseExecutionResource;
 import org.camunda.bpm.engine.rest.sub.runtime.impl.CaseExecutionResourceImpl;
 import org.camunda.bpm.engine.runtime.CaseExecution;
 import org.camunda.bpm.engine.runtime.CaseExecutionQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class CaseExecutionRestServiceImpl extends AbstractRestProcessEngineAware implements CaseExecutionRestService {
 
@@ -21,12 +22,12 @@ public class CaseExecutionRestServiceImpl extends AbstractRestProcessEngineAware
     super();
   }
 
-  public CaseExecutionRestServiceImpl(String engineName) {
-    super(engineName);
+  public CaseExecutionRestServiceImpl(String engineName, final ObjectMapper objectMapper) {
+    super(engineName, objectMapper);
   }
 
   public CaseExecutionResource getCaseExecution(String caseExecutionId) {
-    return new CaseExecutionResourceImpl(getProcessEngine(), caseExecutionId);
+    return new CaseExecutionResourceImpl(getProcessEngine(), caseExecutionId, getObjectMapper());
   }
 
   public List<CaseExecutionDto> getCaseExecutions(UriInfo uriInfo, Integer firstResult, Integer maxResults) {

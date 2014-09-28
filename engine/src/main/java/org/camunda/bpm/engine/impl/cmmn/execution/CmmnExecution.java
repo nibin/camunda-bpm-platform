@@ -60,7 +60,7 @@ import org.camunda.bpm.engine.impl.cmmn.model.CmmnIfPartDeclaration;
 import org.camunda.bpm.engine.impl.cmmn.model.CmmnOnPartDeclaration;
 import org.camunda.bpm.engine.impl.cmmn.model.CmmnSentryDeclaration;
 import org.camunda.bpm.engine.impl.core.instance.CoreExecution;
-import org.camunda.bpm.engine.impl.core.variable.CorePersistentVariableScope;
+import org.camunda.bpm.engine.impl.core.variable.scope.AbstractVariableScope;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessDefinition;
 import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 
@@ -433,7 +433,7 @@ public abstract class CmmnExecution extends CoreExecution implements CmmnCaseIns
 
   // variables ////////////////////////////////////////////
 
-  public CorePersistentVariableScope getParentVariableScope() {
+  public AbstractVariableScope getParentVariableScope() {
     return getParent();
   }
 

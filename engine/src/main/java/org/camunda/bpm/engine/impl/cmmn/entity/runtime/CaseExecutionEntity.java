@@ -28,7 +28,7 @@ import org.camunda.bpm.engine.impl.cmmn.operation.CmmnAtomicOperation;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.core.instance.CoreExecution;
 import org.camunda.bpm.engine.impl.core.operation.CoreAtomicOperation;
-import org.camunda.bpm.engine.impl.core.variable.CorePersistentVariableStore;
+import org.camunda.bpm.engine.impl.core.variable.scope.CoreVariableStore;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbReferences;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
@@ -445,7 +445,7 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
 
   // variables //////////////////////////////////////////////////////////////
 
-  protected CorePersistentVariableStore getVariableStore() {
+  protected CoreVariableStore getVariableStore() {
     return variableStore;
   }
 

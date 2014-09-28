@@ -14,7 +14,11 @@ package org.camunda.bpm.engine.rest.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.ContextResolver;
+
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.rest.TaskRestService;
@@ -26,15 +30,24 @@ import org.camunda.bpm.engine.rest.sub.task.TaskResource;
 import org.camunda.bpm.engine.rest.sub.task.impl.TaskResourceImpl;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implements TaskRestService {
+
+  @Context
+  protected ContextResolver<ObjectMapper> objectMapperResolver;
 
   public TaskRestServiceImpl() {
     super();
   }
 
-  public TaskRestServiceImpl(String engineName) {
+  public TaskRestServiceImpl(String engineName, final ObjectMapper objectMapper) {
     super(engineName);
+    this.objectMapperResolver = new ContextResolver<ObjectMapper>() {
+      public ObjectMapper getContext(Class<?> type) {
+        return objectMapper;
+      }
+    };
   }
 
   @Override
@@ -120,7 +133,7 @@ public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implemen
 
   @Override
   public TaskResource getTask(String id) {
-    return new TaskResourceImpl(getProcessEngine(), id, relativeRootResourcePath);
+    return new TaskResourceImpl(getProcessEngine(), id, relativeRootResourcePath, objectMapperResolver.getContext(null));
   }
 
   public void createTask(TaskDto taskDto) {

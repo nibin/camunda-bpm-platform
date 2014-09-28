@@ -1,9 +1,9 @@
 /* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,9 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.ext.ContextResolver;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.ExecutionRestService;
@@ -26,22 +28,31 @@ import org.camunda.bpm.engine.rest.sub.runtime.ExecutionResource;
 import org.camunda.bpm.engine.rest.sub.runtime.impl.ExecutionResourceImpl;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ExecutionQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware implements ExecutionRestService {
+
+  @Context
+  protected ContextResolver<ObjectMapper> objectMapperResolver;
 
   public ExecutionRestServiceImpl() {
     super();
   }
 
-  public ExecutionRestServiceImpl(String engineName) {
+  public ExecutionRestServiceImpl(String engineName, final ObjectMapper objectMapper) {
     super(engineName);
+    this.objectMapperResolver = new ContextResolver<ObjectMapper>() {
+      public ObjectMapper getContext(Class<?> type) {
+        return objectMapper;
+      }
+    };
   }
-  
+
   @Override
   public ExecutionResource getExecution(String executionId) {
-    return new ExecutionResourceImpl(getProcessEngine(), executionId);
+    return new ExecutionResourceImpl(getProcessEngine(), executionId, objectMapperResolver.getContext(null));
   }
-  
+
   @Override
   public List<ExecutionDto> getExecutions(UriInfo uriInfo, Integer firstResult,
       Integer maxResults) {
@@ -54,14 +65,14 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
       ExecutionQueryDto queryDto, Integer firstResult, Integer maxResults) {
     ProcessEngine engine = getProcessEngine();
     ExecutionQuery query = queryDto.toQuery(engine);
-    
+
     List<Execution> matchingExecutions;
     if (firstResult != null || maxResults != null) {
       matchingExecutions = executePaginatedQuery(query, firstResult, maxResults);
     } else {
       matchingExecutions = query.list();
     }
-    
+
     List<ExecutionDto> executionResults = new ArrayList<ExecutionDto>();
     for (Execution execution : matchingExecutions) {
       ExecutionDto resultExecution = ExecutionDto.fromExecution(execution);
@@ -69,7 +80,7 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
     }
     return executionResults;
   }
-  
+
   private List<Execution> executePaginatedQuery(ExecutionQuery query, Integer firstResult, Integer maxResults) {
     if (firstResult == null) {
       firstResult = 0;
@@ -77,7 +88,7 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
     if (maxResults == null) {
       maxResults = Integer.MAX_VALUE;
     }
-    return query.listPage(firstResult, maxResults); 
+    return query.listPage(firstResult, maxResults);
   }
 
   @Override
@@ -90,11 +101,11 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
   public CountResultDto queryExecutionsCount(ExecutionQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
     ExecutionQuery query = queryDto.toQuery(engine);
-    
+
     long count = query.count();
     CountResultDto result = new CountResultDto();
     result.setCount(count);
-    
+
     return result;
   }
 }

@@ -81,7 +81,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
       .body("variableName", equalTo(builder.getName()))
       .body("variableTypeName", equalTo(builder.getVariableTypeName()))
       .body("typeName", equalTo(builder.getTypeName()))
-      .body("value", equalTo(builder.getValue()))
+      .body("value", equalTo(builder.getTypedValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
       .body("activityInstanceId", equalTo(builder.getActivityInstanceId()))
@@ -104,7 +104,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     HistoricVariableUpdate detailMock = builder
         .typeName(type.getTypeName())
         .valueTypeName(type.getTypeNameForValue(null))
-        .value(null)
+        .typedValue(null)
         .build();
 
     when(historicDetailQueryMock.detailId(detailMock.getId())).thenReturn(historicDetailQueryMock);
@@ -119,7 +119,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
       .body("variableName", equalTo(builder.getName()))
       .body("variableTypeName", equalTo(builder.getVariableTypeName()))
       .body("typeName", equalTo(builder.getTypeName()))
-      .body("value", equalTo(builder.getValue()))
+      .body("value", equalTo(builder.getTypedValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
       .body("activityInstanceId", equalTo(builder.getActivityInstanceId()))
@@ -159,14 +159,14 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value(byteContent);
+          .typedValue(byteContent);
 
     MockHistoricVariableUpdateBuilder builder = MockProvider.mockHistoricVariableUpdate();
 
     HistoricVariableUpdate detailMock = builder
         .typeName(type.getTypeName())
         .valueTypeName(type.getTypeNameForValue(null))
-        .value(byteContent)
+        .typedValue(byteContent)
         .serializedValue(serializedValueBuilder)
         .build();
 
@@ -194,13 +194,13 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value(serializedValue);
+          .typedValue(serializedValue);
 
     HistoricVariableUpdate detailMock =
         MockProvider.mockHistoricVariableUpdate()
           .valueTypeName(type.getTypeNameForValue(null))
           .typeName(type.getTypeName())
-          .value(value)
+          .typedValue(value)
           .serializedValue(serializedValueBuilder)
           .build();
 

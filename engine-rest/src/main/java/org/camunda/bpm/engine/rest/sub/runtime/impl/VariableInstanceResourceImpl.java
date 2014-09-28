@@ -12,14 +12,14 @@
  */
 package org.camunda.bpm.engine.rest.sub.runtime.impl;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.dto.runtime.VariableInstanceDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
+import org.camunda.bpm.engine.rest.impl.TypedValueUtil;
 import org.camunda.bpm.engine.rest.sub.runtime.VariableInstanceResource;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
@@ -38,11 +38,18 @@ public class VariableInstanceResourceImpl implements VariableInstanceResource {
     this.engine = engine;
   }
 
-  public VariableInstanceDto getVariable() {
-    VariableInstance variableInstance = baseQuery()
-      .disableBinaryFetching()
-//      .disableCustomObjectDeserialization()
-      .singleResult();
+  public VariableInstanceDto getVariable(boolean deserializeObjectValue) {
+    VariableInstanceQuery baseQuery = baseQuery();
+
+    // do not fetch byte arrays
+    baseQuery.disableBinaryFetching();
+
+    if(!deserializeObjectValue) {
+      baseQuery.disableObjectValueDeserialization();
+    }
+
+    VariableInstance variableInstance = baseQuery.singleResult();
+
     if(variableInstance != null) {
       return VariableInstanceDto.fromVariableInstance(variableInstance);
 
@@ -52,20 +59,16 @@ public class VariableInstanceResourceImpl implements VariableInstanceResource {
     }
   }
 
-  public InputStream getBinaryVariable() {
+  public Response getBinaryVariable() {
+
+    ResponseBuilder responseBuilder = Response.ok();
+
     VariableInstance variableInstance = baseQuery()
-        .disableCustomObjectDeserialization()
-        .singleResult();
+      .disableObjectValueDeserialization()
+      .singleResult();
     if(variableInstance != null) {
 
-      Object value = variableInstance.getSerializedValue().getValue();
-      if(value instanceof byte[]) {
-        return new ByteArrayInputStream((byte[]) value);
-
-      } else {
-        throw new InvalidRequestException(Status.BAD_REQUEST, "Variable instance with Id '"+variableId + "' is not a binary variable.");
-
-      }
+      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableInstance.getTypedValue());
 
     } else {
       throw new InvalidRequestException(Status.NOT_FOUND, "Variable instance with Id '"+variableId + "' does not exist.");

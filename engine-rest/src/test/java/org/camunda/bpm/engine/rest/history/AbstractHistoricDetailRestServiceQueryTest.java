@@ -280,7 +280,7 @@ public class AbstractHistoricDetailRestServiceQueryTest extends AbstractRestServ
           .body("[0].variableName", equalTo(historicUpdateBuilder.getName()))
           .body("[0].variableTypeName", equalTo(historicUpdateBuilder.getVariableTypeName()))
           .body("[0].typeName", equalTo(historicUpdateBuilder.getTypeName()))
-          .body("[0].value", equalTo(historicUpdateBuilder.getValue()))
+          .body("[0].value", equalTo(historicUpdateBuilder.getTypedValue()))
           .body("[0].processInstanceId", equalTo(historicUpdateBuilder.getProcessInstanceId()))
           .body("[0].errorMessage", equalTo(historicUpdateBuilder.getErrorMessage()))
           .body("[0].activityInstanceId", equalTo(historicUpdateBuilder.getActivityInstanceId()))
@@ -325,13 +325,13 @@ public class AbstractHistoricDetailRestServiceQueryTest extends AbstractRestServ
   public void testSerializableVariableInstanceRetrieval() {
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value("a serialized value".getBytes());
+          .typedValue("a serialized value".getBytes());
 
     MockHistoricVariableUpdateBuilder builder = MockProvider.mockHistoricVariableUpdate()
         .storesCustomObjects(true)
         .typeName(ProcessEngineVariableType.SERIALIZABLE.getName())
         .valueTypeName(ProcessEngineVariableType.SERIALIZABLE.getName())
-        .value("a serialized value")
+        .typedValue("a serialized value")
         .serializedValue(serializedValueBuilder);
 
     List<HistoricDetail> details = new ArrayList<HistoricDetail>();
@@ -357,7 +357,7 @@ public class AbstractHistoricDetailRestServiceQueryTest extends AbstractRestServ
   public void testSpinVariableInstanceRetrieval() {
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value("aSerializedValue")
+          .typedValue("aSerializedValue")
           .configuration(ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE, "aRootType")
           .configuration(ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID, "aDataFormat");
 

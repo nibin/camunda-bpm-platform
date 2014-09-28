@@ -24,6 +24,8 @@ import org.camunda.bpm.engine.history.HistoricVariableUpdate;
 import org.camunda.bpm.engine.rest.dto.history.HistoricDetailDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.sub.history.HistoricDetailResource;
+import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
  * @author Daniel Meyer
@@ -65,9 +67,13 @@ public class HistoricDetailResourceImpl implements HistoricDetailResource {
       throw new InvalidRequestException(Status.BAD_REQUEST, "Historic detail with Id '"+detailId + "' is not a variable update.");
 
     } else {
-      Object value = ((HistoricVariableUpdate) variableInstance).getSerializedValue().getValue();
-      if(value instanceof byte[]) {
-        return new ByteArrayInputStream((byte[]) value);
+      TypedValue typedValue = ((HistoricVariableUpdate) variableInstance).getTypedValue();
+      if(typedValue.getType() == ValueType.BYTES) {
+        if(typedValue.getValue() != null) {
+          return new ByteArrayInputStream((byte[]) typedValue.getValue());
+        } else {
+          return new ByteArrayInputStream(new byte[0]);
+        }
 
       } else {
         throw new InvalidRequestException(Status.BAD_REQUEST, "Historic detail with Id '"+detailId + "' is not a binary variable.");

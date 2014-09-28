@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 
@@ -46,13 +47,17 @@ import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.history.HistoryRestService;
 import org.camunda.bpm.engine.rest.impl.history.HistoryRestServiceImpl;
 import org.camunda.bpm.engine.rest.spi.ProcessEngineProvider;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
+
+  @Context
+  protected ObjectMapper objectMapper;
 
   @Override
   public ProcessDefinitionRestService getProcessDefinitionService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    ProcessDefinitionRestServiceImpl subResource = new ProcessDefinitionRestServiceImpl(engineName);
+    ProcessDefinitionRestServiceImpl subResource = new ProcessDefinitionRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }
@@ -60,7 +65,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public ProcessInstanceRestService getProcessInstanceService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    ProcessInstanceRestServiceImpl subResource = new ProcessInstanceRestServiceImpl(engineName);
+    ProcessInstanceRestServiceImpl subResource = new ProcessInstanceRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }
@@ -68,7 +73,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public ExecutionRestService getExecutionService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    ExecutionRestServiceImpl subResource = new ExecutionRestServiceImpl(engineName);
+    ExecutionRestServiceImpl subResource = new ExecutionRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }
@@ -76,7 +81,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public TaskRestService getTaskRestService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    TaskRestServiceImpl subResource = new TaskRestServiceImpl(engineName);
+    TaskRestServiceImpl subResource = new TaskRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
 
     return subResource;
@@ -93,7 +98,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public MessageRestService getMessageRestService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    MessageRestServiceImpl subResource = new MessageRestServiceImpl(engineName);
+    MessageRestServiceImpl subResource = new MessageRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }
@@ -169,7 +174,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public CaseDefinitionRestService getCaseDefinitionRestService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    CaseDefinitionRestServiceImpl subResource = new CaseDefinitionRestServiceImpl(engineName);
+    CaseDefinitionRestServiceImpl subResource = new CaseDefinitionRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }
@@ -177,7 +182,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public CaseInstanceRestService getCaseInstanceRestService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    CaseInstanceRestServiceImpl subResource = new CaseInstanceRestServiceImpl(engineName);
+    CaseInstanceRestServiceImpl subResource = new CaseInstanceRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }
@@ -185,7 +190,7 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   @Override
   public CaseExecutionRestService getCaseExecutionRestService(String engineName) {
     String rootResourcePath = getRelativeEngineUri(engineName).toASCIIString();
-    CaseExecutionRestServiceImpl subResource = new CaseExecutionRestServiceImpl(engineName);
+    CaseExecutionRestServiceImpl subResource = new CaseExecutionRestServiceImpl(engineName, objectMapper);
     subResource.setRelativeRootResourceUri(rootResourcePath);
     return subResource;
   }

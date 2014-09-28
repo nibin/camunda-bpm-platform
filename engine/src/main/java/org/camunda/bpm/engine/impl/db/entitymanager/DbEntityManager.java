@@ -17,11 +17,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
+
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.*;
 import org.camunda.bpm.engine.impl.cfg.IdGenerator;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionQueryImpl;
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.DbEntityLifecycleAware;
 import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
 import org.camunda.bpm.engine.impl.db.PersistenceSession;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.CachedDbEntity;
@@ -164,6 +166,12 @@ public class DbEntityManager implements Session {
       return cachedPersistentObject;
     }
     dbEntityCache.putPersistent(persistentObject);
+
+    // invoke postLoad() lifecycle method
+    if (persistentObject instanceof DbEntityLifecycleAware) {
+      DbEntityLifecycleAware lifecycleAware = (DbEntityLifecycleAware) persistentObject;
+      lifecycleAware.postLoad();
+    }
     return persistentObject;
   }
 

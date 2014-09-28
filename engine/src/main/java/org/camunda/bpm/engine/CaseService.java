@@ -13,7 +13,6 @@
 package org.camunda.bpm.engine;
 
 import java.util.Collection;
-import java.util.Map;
 
 import org.camunda.bpm.engine.exception.NotFoundException;
 import org.camunda.bpm.engine.exception.NotValidException;
@@ -24,6 +23,9 @@ import org.camunda.bpm.engine.runtime.CaseInstance;
 import org.camunda.bpm.engine.runtime.CaseInstanceBuilder;
 import org.camunda.bpm.engine.runtime.CaseInstanceQuery;
 import org.camunda.bpm.engine.runtime.CaseSentryPartQuery;
+import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.value.SerializableValue;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
  * Service which provides access to {@link CaseInstance case instances}
@@ -98,7 +100,24 @@ public interface CaseService {
    * @throws NotFoundException when no case execution is found for the given case execution id
    * @throws ProcessEngineException when an internal exception happens during the execution of the command
    */
-  Map<String, Object> getVariables(String caseExecutionId);
+  VariableMap getVariables(String caseExecutionId);
+
+  /**
+   * <p>All variables visible from the given execution scope (including parent scopes).</p>
+  *
+  * <p>If you have many local variables and you only need a few, consider
+  * using {@link #getVariables(String, Collection)} for better performance.</p>
+  *
+  * @param caseExecutionId the id of a case instance or case execution, cannot be null
+  * @param deserializeValues if false, the process engine will not attempt to deserialize {@link SerializableValue SerializableValues}.
+  *
+  * @return the variables or an empty map if no such variables are found
+  *
+  * @throws NotValidException when the given case execution id is null
+  * @throws NotFoundException when no case execution is found for the given case execution id
+  * @throws ProcessEngineException when an internal exception happens during the execution of the command
+  */
+ VariableMap getVariables(String caseExecutionId, boolean deserializeValues);
 
   /**
    * <p>All variable values that are defined in the case execution scope, without
@@ -115,7 +134,25 @@ public interface CaseService {
    * @throws NotFoundException when no case execution is found for the given case execution id
    * @throws ProcessEngineException when an internal exception happens during the execution of the command
    */
-  Map<String, Object> getVariablesLocal(String caseExecutionId);
+  VariableMap getVariablesLocal(String caseExecutionId);
+
+  /**
+   * <p>All variable values that are defined in the case execution scope, without
+   * taking outer scopes into account.</p>
+   *
+   * <p>If you have many local variables and you only need a few, consider
+   * using {@link #getVariablesLocal(String, Collection)} for better performance.</p>
+   *
+   * @param caseExecutionId the id of a case execution, cannot be null
+   * @param deserializeValues if false, the process engine will not attempt to deserialize {@link SerializableValue SerializableValues}.
+   *
+   * @return the variables or an empty map if no such variables are found
+   *
+   * @throws NotValidException when the given case execution id is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  VariableMap getVariablesLocal(String caseExecutionId, boolean deserializeValues);
 
   /**
    * <p>The variable values for all given variableNames, takes all variables
@@ -131,7 +168,7 @@ public interface CaseService {
    * @throws NotFoundException when no case execution is found for the given case execution id
    * @throws ProcessEngineException when an internal exception happens during the execution of the command
    */
-  Map<String, Object> getVariables(String caseExecutionId, Collection<String> variableNames);
+  VariableMap getVariables(String caseExecutionId, Collection<String> variableNames);
 
   /**
    * <p>The variable values for the given variableNames only taking the given case
@@ -146,7 +183,7 @@ public interface CaseService {
    * @throws NotFoundException when no case execution is found for the given case execution id
    * @throws ProcessEngineException when an internal exception happens during the execution of the command
    */
-  Map<String, Object> getVariablesLocal(String caseExecutionId, Collection<String> variableNames);
+  VariableMap getVariablesLocal(String caseExecutionId, Collection<String> variableNames);
 
   /**
    * <p>Searching for the variable is done in all scopes that are visible
@@ -167,6 +204,43 @@ public interface CaseService {
   Object getVariable(String caseExecutionId, String variableName);
 
   /**
+   * <p>Searching for the variable is done in all scopes that are visible
+   * to the given case execution (including parent scopes).</p>
+   *
+   * <p>Returns null when no variable value is found with the given name or
+   * when the value is set to null.</p>
+   *
+   * @param caseExecutionId the id of a case instance or case execution, cannot be null
+   * @param variableName the name of a variable, cannot be null
+   *
+   * @return the variable value or null if the variable is undefined or the value of the variable is null
+   *
+   * @throws NotValidException when the given case execution id or variable name is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  <T extends TypedValue> T getVariableTyped(String caseExecutionId, String variableName);
+
+  /**
+   * <p>Searching for the variable is done in all scopes that are visible
+   * to the given case execution (including parent scopes).</p>
+   *
+   * <p>Returns null when no variable value is found with the given name or
+   * when the value is set to null.</p>
+   *
+   * @param caseExecutionId the id of a case instance or case execution, cannot be null
+   * @param variableName the name of a variable, cannot be null
+   * @param deserializeValue if false, {@link SerializableValue SerializableValues} will not be deserialized
+   *
+   * @return the variable value or null if the variable is undefined or the value of the variable is null
+   *
+   * @throws NotValidException when the given case execution id or variable name is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  <T extends TypedValue> T getVariableTyped(String caseExecutionId, String variableName, boolean deserializeValue);
+
+  /**
    * <p>The variable value for an case execution. Returns the value when the variable is set
    * for the case execution (and not searching parent scopes).</p>
    *
@@ -183,4 +257,41 @@ public interface CaseService {
    * @throws ProcessEngineException when an internal exception happens during the execution of the command
    */
   Object getVariableLocal(String caseExecutionId, String variableName);
+
+  /**
+   * <p>The variable value for an case execution. Returns the value when the variable is set
+   * for the case execution (and not searching parent scopes).</p>
+   *
+   * <p>Returns null when no variable value is found with the given name or when the value is
+   * set to null.</p>
+   *
+   * @param caseExecutionId the id of a case instance or case execution, cannot be null
+   * @param variableName the name of a variable, cannot be null
+   *
+   * @return the variable value or null if the variable is undefined or the value of the variable is null
+   *
+   * @throws NotValidException when the given case execution id or variable name is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  <T extends TypedValue> T getVariableLocalTyped(String caseExecutionId, String variableName);
+
+  /**
+   * <p>The variable value for an case execution. Returns the value when the variable is set
+   * for the case execution (and not searching parent scopes).</p>
+   *
+   * <p>Returns null when no variable value is found with the given name or when the value is
+   * set to null.</p>
+   *
+   * @param caseExecutionId the id of a case instance or case execution, cannot be null
+   * @param variableName the name of a variable, cannot be null
+   * @param deserializeValue if false, {@link SerializableValue SerializableValues} will not be deserialized
+   *
+   * @return the variable value or null if the variable is undefined or the value of the variable is null
+   *
+   * @throws NotValidException when the given case execution id or variable name is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  <T extends TypedValue> T getVariableLocalTyped(String caseExecutionId, String variableName, boolean deserializeValue);
 }

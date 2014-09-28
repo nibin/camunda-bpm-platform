@@ -288,12 +288,12 @@ public abstract class AbstractHistoricVariableInstanceRestServiceQueryTest exten
   public void testSerializableVariableInstanceRetrieval() {
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value("a serialized value".getBytes());
+          .typedValue("a serialized value".getBytes());
 
     MockHistoricVariableInstanceBuilder builder = MockProvider.mockHistoricVariableInstance()
         .storesCustomObjects(true)
         .typeName(ProcessEngineVariableType.SERIALIZABLE.getName())
-        .value("a serialized value")
+        .typedValue("a serialized value")
         .valueTypeName("Serializable")
         .serializedValue(serializedValueBuilder);
 
@@ -322,7 +322,7 @@ public abstract class AbstractHistoricVariableInstanceRestServiceQueryTest exten
   public void testSpinVariableInstanceRetrieval() {
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value("aSpinSerializedValue")
+          .typedValue("aSpinSerializedValue")
           .configuration(ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE, "aRootType")
           .configuration(ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID, "aDataFormat");
 

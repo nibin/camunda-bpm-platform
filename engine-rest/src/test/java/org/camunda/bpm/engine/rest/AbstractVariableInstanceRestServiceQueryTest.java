@@ -22,9 +22,7 @@ import java.util.Map;
 import javax.ws.rs.core.Response.Status;
 import javax.xml.registry.InvalidRequestException;
 
-import org.camunda.bpm.engine.delegate.ProcessEngineVariableType;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
-import org.camunda.bpm.engine.rest.helper.MockSerializedValueBuilder;
 import org.camunda.bpm.engine.rest.helper.MockVariableInstanceBuilder;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
@@ -176,7 +174,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   /**
@@ -194,7 +192,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   /**
@@ -212,7 +210,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -224,8 +222,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
           .body("size()", is(1))
           .body("[0].id", equalTo(mockInstanceBuilder.getId()))
           .body("[0].name", equalTo(mockInstanceBuilder.getName()))
-          .body("[0].type", equalTo(mockInstanceBuilder.getValueTypeName()))
-          .body("[0].variableType", equalTo(mockInstanceBuilder.getType()))
+          .body("[0].type", equalTo(mockInstanceBuilder.getTypeName()))
           .body("[0].value", equalTo(mockInstanceBuilder.getValue()))
           .body("[0].processInstanceId", equalTo(mockInstanceBuilder.getProcessInstanceId()))
           .body("[0].executionId", equalTo(mockInstanceBuilder.getExecutionId()))
@@ -250,7 +247,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
     verify(mockedQuery).disableBinaryFetching();
     // requirement to not break existing API; should be:
     // verify(mockedQuery).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -265,8 +262,8 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
           .body("size()", is(1))
           .body("[0].id", equalTo(mockInstanceBuilder.getId()))
           .body("[0].name", equalTo(mockInstanceBuilder.getName()))
-          .body("[0].type", equalTo(mockInstanceBuilder.getValueTypeName()))
-          .body("[0].value", equalTo(mockInstanceBuilder.getValue()))
+          .body("[0].type", equalTo(mockInstanceBuilder.getTypeName()))
+          .body("[0].value", equalTo(mockInstanceBuilder.getTypedValue()))
           .body("[0].processInstanceId", equalTo(mockInstanceBuilder.getProcessInstanceId()))
           .body("[0].executionId", equalTo(mockInstanceBuilder.getExecutionId()))
           .body("[0].caseInstanceId", equalTo(mockInstanceBuilder.getCaseInstanceId()))
@@ -291,77 +288,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(mockedQuery).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
-  }
-
-  @Test
-  public void testSerializableVariableInstanceRetrieval() {
-    MockSerializedValueBuilder serializedValueBuilder =
-        new MockSerializedValueBuilder()
-          .value("a serialized value".getBytes());
-
-    MockVariableInstanceBuilder builder = MockProvider.mockVariableInstance()
-        .storesCustomObjects(true)
-        .typeName(ProcessEngineVariableType.SERIALIZABLE.getName())
-        .value("a serialized value")
-        .valueTypeName("Serializable")
-        .serializedValue(serializedValueBuilder);
-
-    List<VariableInstance> mockInstances = new ArrayList<VariableInstance>();
-    mockInstances.add(builder.build());
-
-    mockedQuery = setUpMockVariableInstanceQuery(mockInstances);
-
-    given()
-        .then().expect().statusCode(Status.OK.getStatusCode())
-        .and()
-          .body("size()", is(1))
-          .body("[0].type", equalTo("Serializable"))
-          .body("[0].variableType", equalTo(ProcessEngineVariableType.SERIALIZABLE.getName()))
-          .body("[0].errorMessage", nullValue())
-          // assertions to not break previous behavior; ideally
-//          .body("[0].value", nullValue())
-          .body("[0].value.object", equalTo("a serialized value"))
-          .body("[0].value.type", equalTo(String.class.getName()))
-        .when().get(VARIABLE_INSTANCE_QUERY_URL);
-
-    // requirement to not break existing API; should be:
-    // verify(mockedQuery).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
-  }
-
-  @Test
-  public void testSpinVariableInstanceRetrieval() {
-    MockSerializedValueBuilder serializedValueBuilder =
-        new MockSerializedValueBuilder()
-          .value("aSpinSerializedValue")
-          .configuration(ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE, "aRootType")
-          .configuration(ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID, "aDataFormat");
-
-    MockVariableInstanceBuilder builder = MockProvider.mockVariableInstance()
-        .storesCustomObjects(true)
-        .typeName(ProcessEngineVariableType.SPIN.getName())
-        .valueTypeName("Object")
-        .serializedValue(serializedValueBuilder);
-
-    List<VariableInstance> mockInstances = new ArrayList<VariableInstance>();
-    mockInstances.add(builder.build());
-
-    mockedQuery = setUpMockVariableInstanceQuery(mockInstances);
-
-    given()
-        .then().expect().statusCode(Status.OK.getStatusCode())
-        .and()
-          .body("size()", is(1))
-          .body("[0].type", equalTo("Object"))
-          .body("[0].variableType", equalTo(ProcessEngineVariableType.SPIN.getName()))
-          .body("[0].value", equalTo("aSpinSerializedValue"))
-          .body("[0].errorMessage", nullValue())
-          .body("[0].serializationConfig." + ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE,
-              equalTo("aRootType"))
-          .body("[0].serializationConfig." + ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID,
-              equalTo("aDataFormat"))
-        .when().get(VARIABLE_INSTANCE_QUERY_URL);
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -395,7 +322,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(mockedQuery).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -453,7 +380,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(mockedQuery).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -505,7 +432,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(mockedQuery, times(7)).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -530,7 +457,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -567,7 +494,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -600,7 +527,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test
@@ -651,7 +578,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
 
     // requirement to not break existing API; should be:
     // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(mockedQuery, never()).disableCustomObjectDeserialization();
+    verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
   @Test

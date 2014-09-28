@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.rest.sub.task;
 import static org.camunda.bpm.engine.rest.hal.Hal.MEDIA_TYPE_HAL;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -25,7 +26,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import org.camunda.bpm.engine.rest.dto.FormVariablesDto;
+import org.camunda.bpm.engine.rest.dto.VariableValueDto;
 import org.camunda.bpm.engine.rest.dto.task.CompleteTaskDto;
 import org.camunda.bpm.engine.rest.dto.task.FormDto;
 import org.camunda.bpm.engine.rest.dto.task.IdentityLinkDto;
@@ -115,7 +116,7 @@ public interface TaskResource {
   @GET
   @Path("/form-variables")
   @Produces(MediaType.APPLICATION_JSON)
-  FormVariablesDto getFormVariables(@QueryParam("variableNames") String variableNames);
+  Map<String, VariableValueDto> getFormVariables(@QueryParam("variableNames") String variableNames);
 
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)

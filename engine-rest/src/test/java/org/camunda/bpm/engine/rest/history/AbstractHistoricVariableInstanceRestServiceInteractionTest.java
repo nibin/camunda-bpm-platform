@@ -100,7 +100,7 @@ public abstract class AbstractHistoricVariableInstanceRestServiceInteractionTest
     HistoricVariableInstance variableInstanceMock = builder
       .typeName(type.getTypeName())
       .valueTypeName("byte[]")
-      .value(null)
+      .typedValue(null)
       .build();
 
     when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);
@@ -145,11 +145,11 @@ public abstract class AbstractHistoricVariableInstanceRestServiceInteractionTest
 
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value(byteContent);
+          .typedValue(byteContent);
 
     HistoricVariableInstance variableInstanceMock = MockProvider.mockHistoricVariableInstance()
         .typeName(type.getTypeName())
-        .value(byteContent)
+        .typedValue(byteContent)
         .serializedValue(serializedValueBuilder)
         .build();
 
@@ -195,13 +195,13 @@ public abstract class AbstractHistoricVariableInstanceRestServiceInteractionTest
 
     MockSerializedValueBuilder serializedValueBuilder =
         new MockSerializedValueBuilder()
-          .value(serializedValue);
+          .typedValue(serializedValue);
 
     HistoricVariableInstance variableInstanceMock =
         MockProvider.mockHistoricVariableInstance()
           .valueTypeName(type.getTypeNameForValue(null))
           .typeName(type.getTypeName())
-          .value(value)
+          .typedValue(value)
           .serializedValue(serializedValueBuilder)
           .build();
 

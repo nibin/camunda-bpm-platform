@@ -396,7 +396,7 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
       .when().post(SUBMIT_FORM_URL);
 
     SerializedVariableValue serializedVariableValue = SerializedVariableValueBuilder.create()
-      .value(jsonValue)
+      .typedValue(jsonValue)
       .configValue("someSerializationProp", "someSerializationVal")
       .done();
 

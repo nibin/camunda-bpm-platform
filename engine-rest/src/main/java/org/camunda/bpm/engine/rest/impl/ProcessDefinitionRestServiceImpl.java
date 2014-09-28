@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
@@ -35,15 +36,20 @@ import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.sub.repository.ProcessDefinitionResource;
 import org.camunda.bpm.engine.rest.sub.repository.impl.ProcessDefinitionResourceImpl;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class ProcessDefinitionRestServiceImpl extends AbstractRestProcessEngineAware implements ProcessDefinitionRestService {
+
+  @Context
+  protected ObjectMapper objectMapper;
 
   public ProcessDefinitionRestServiceImpl() {
     super();
   }
 
-	public ProcessDefinitionRestServiceImpl(String engineName) {
+	public ProcessDefinitionRestServiceImpl(String engineName, ObjectMapper objectMapper) {
     super(engineName);
+    this.objectMapper = objectMapper;
   }
 
 	@Override
@@ -70,7 +76,7 @@ public class ProcessDefinitionRestServiceImpl extends AbstractRestProcessEngineA
   @Override
   public ProcessDefinitionResource getProcessDefinitionById(
       String processDefinitionId) {
-    return new ProcessDefinitionResourceImpl(getProcessEngine(), processDefinitionId, relativeRootResourcePath);
+    return new ProcessDefinitionResourceImpl(getProcessEngine(), processDefinitionId, relativeRootResourcePath, objectMapper);
   }
 
   @Override

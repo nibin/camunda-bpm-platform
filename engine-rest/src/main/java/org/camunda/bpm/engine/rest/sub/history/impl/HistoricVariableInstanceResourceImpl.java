@@ -23,6 +23,8 @@ import org.camunda.bpm.engine.history.HistoricVariableInstanceQuery;
 import org.camunda.bpm.engine.rest.dto.history.HistoricVariableInstanceDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.sub.history.HistoricVariableInstanceResource;
+import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
  * @author Daniel Meyer
@@ -59,9 +61,13 @@ public class HistoricVariableInstanceResourceImpl implements HistoricVariableIns
         .singleResult();
     if(variableInstance != null) {
 
-      Object value = variableInstance.getSerializedValue().getValue();
-      if(value instanceof byte[]) {
-        return new ByteArrayInputStream((byte[]) value);
+      TypedValue typedValue = variableInstance.getTypedValue();
+      if(typedValue.getType() == ValueType.BYTES) {
+        if(typedValue.getValue() != null) {
+          return new ByteArrayInputStream((byte[]) typedValue.getValue());
+        } else {
+          return new ByteArrayInputStream(new byte[0]);
+        }
 
       } else {
         throw new InvalidRequestException(Status.BAD_REQUEST, "Variable instance with Id '"+variableId + "' is not a binary variable.");

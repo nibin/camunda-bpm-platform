@@ -43,13 +43,13 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
   }
 
   @Override
-  public List<VariableInstanceDto> getVariableInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
+  public List<VariableInstanceDto> getVariableInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults, boolean deserializeObjectValues) {
     VariableInstanceQueryDto queryDto = new VariableInstanceQueryDto(uriInfo.getQueryParameters());
-    return queryVariableInstances(queryDto, firstResult, maxResults);
+    return queryVariableInstances(queryDto, firstResult, maxResults, deserializeObjectValues);
   }
 
   @Override
-  public List<VariableInstanceDto> queryVariableInstances(VariableInstanceQueryDto queryDto, Integer firstResult, Integer maxResults) {
+  public List<VariableInstanceDto> queryVariableInstances(VariableInstanceQueryDto queryDto, Integer firstResult, Integer maxResults, boolean deserializeObjectValues) {
     ProcessEngine engine = getProcessEngine();
     VariableInstanceQuery query = queryDto.toQuery(engine);
 
@@ -57,7 +57,9 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
     query.disableBinaryFetching();
 
     // disable custom object fetching by default. Cannot be done to not break existing API
-//    query.disableCustomObjectDeserialization();
+    if(deserializeObjectValues) {
+      query.disableObjectValueDeserialization();
+    }
 
     List<VariableInstance> matchingInstances;
     if (firstResult != null || maxResults != null) {

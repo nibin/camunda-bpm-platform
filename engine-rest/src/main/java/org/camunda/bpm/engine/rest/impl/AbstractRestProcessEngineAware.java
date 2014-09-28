@@ -12,13 +12,19 @@
  */
 package org.camunda.bpm.engine.rest.impl;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.ext.ContextResolver;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.spi.impl.AbstractProcessEngineAware;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public abstract class AbstractRestProcessEngineAware extends AbstractProcessEngineAware {
+
+  @Context
+  private ContextResolver<ObjectMapper> objectMapperResolver;
 
   protected String relativeRootResourcePath = "/";
 
@@ -26,8 +32,13 @@ public abstract class AbstractRestProcessEngineAware extends AbstractProcessEngi
     super();
   }
 
-  public AbstractRestProcessEngineAware(String engineName) {
+  public AbstractRestProcessEngineAware(String engineName, final ObjectMapper objectMapper) {
     super(engineName);
+    this.objectMapperResolver = new ContextResolver<ObjectMapper>() {
+      public ObjectMapper getContext(Class<?> type) {
+        return objectMapper;
+      }
+    };
   }
 
   protected ProcessEngine getProcessEngine() {
@@ -45,5 +56,9 @@ public abstract class AbstractRestProcessEngineAware extends AbstractProcessEngi
    */
   public void setRelativeRootResourceUri(String relativeRootResourcePath) {
     this.relativeRootResourcePath = relativeRootResourcePath;
+  }
+
+  protected ObjectMapper getObjectMapper() {
+    return objectMapperResolver.getContext(null);
   }
 }

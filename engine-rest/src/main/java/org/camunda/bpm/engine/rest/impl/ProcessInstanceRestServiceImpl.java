@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
@@ -29,16 +30,21 @@ import org.camunda.bpm.engine.rest.sub.runtime.ProcessInstanceResource;
 import org.camunda.bpm.engine.rest.sub.runtime.impl.ProcessInstanceResourceImpl;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAware implements
     ProcessInstanceRestService {
+
+  @Context
+  protected ObjectMapper objectMapper;
 
   public ProcessInstanceRestServiceImpl() {
     super();
   }
 
-  public ProcessInstanceRestServiceImpl(String engineName) {
+  public ProcessInstanceRestServiceImpl(String engineName, ObjectMapper objectMapper) {
     super(engineName);
+    this.objectMapper = objectMapper;
   }
 
 
@@ -100,7 +106,7 @@ public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAwa
 
   @Override
   public ProcessInstanceResource getProcessInstance(String processInstanceId) {
-    return new ProcessInstanceResourceImpl(getProcessEngine(), processInstanceId);
+    return new ProcessInstanceResourceImpl(getProcessEngine(), processInstanceId, objectMapper);
   }
 
   public void updateSuspensionState(ProcessInstanceSuspensionStateDto dto) {
