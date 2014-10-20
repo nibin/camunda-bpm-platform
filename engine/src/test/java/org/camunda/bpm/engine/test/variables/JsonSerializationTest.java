@@ -28,7 +28,7 @@ import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.ObjectValue;
-import org.camunda.bpm.engine.variable.value.builder.SerializedObjectVariableBuilder;
+import org.camunda.bpm.engine.variable.value.builder.SerializedObjectValueBuilder;
 import org.camunda.spin.DataFormats;
 import org.json.JSONException;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -230,9 +230,8 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
 
     ObjectValue typedValue = runtimeService.getVariableTyped(instance.getId(), "simpleBean", false);
 
-    byte[] serializedValue = typedValue.getValueSerialized();
-    String variableAsJson = new String(serializedValue);
-    JSONAssert.assertEquals(bean.toExpectedJsonString(), variableAsJson, true);
+    String serializedValue = typedValue.getValueSerialized();
+    JSONAssert.assertEquals(bean.toExpectedJsonString(), serializedValue, true);
   }
 
   @Deployment(resources = ONE_TASK_PROCESS)
@@ -241,7 +240,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     SimpleBean bean = new SimpleBean("a String", 42, true);
     String beanAsJson = bean.toExpectedJsonString();
 
-    SerializedObjectVariableBuilder serializedValue = serializedObjectValue(beanAsJson)
+    SerializedObjectValueBuilder serializedValue = serializedObjectValue(beanAsJson)
       .serializationDataFormat(JSON_FORMAT_NAME)
       .objectTypeName(bean.getClass().getCanonicalName());
 
@@ -264,7 +263,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     SimpleBean bean = new SimpleBean("a String", 42, true);
     String beanAsJson = bean.toExpectedJsonString();
 
-    SerializedObjectVariableBuilder serializedValue = serializedObjectValue(beanAsJson)
+    SerializedObjectValueBuilder serializedValue = serializedObjectValue(beanAsJson)
       .serializationDataFormat(JSON_FORMAT_NAME);
       // no type name
 
@@ -283,7 +282,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     SimpleBean bean = new SimpleBean("a String", 42, true);
     String beanAsJson = bean.toExpectedJsonString();
 
-    SerializedObjectVariableBuilder serializedValue = serializedObjectValue(beanAsJson)
+    SerializedObjectValueBuilder serializedValue = serializedObjectValue(beanAsJson)
       .serializationDataFormat(JSON_FORMAT_NAME)
       .objectTypeName("Insensible type name."); // < not a valid type name
 
@@ -317,7 +316,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   public void testSetSerializedVariableValueNull() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SerializedObjectVariableBuilder serializedValue = serializedObjectValue()
+    SerializedObjectValueBuilder serializedValue = serializedObjectValue()
       .serializationDataFormat(JSON_FORMAT_NAME)
       .objectTypeName(SimpleBean.class.getCanonicalName());
 
@@ -340,7 +339,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   public void testSetSerializedVariableValueNullNoTypeName() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SerializedObjectVariableBuilder serializedValue = serializedObjectValue()
+    SerializedObjectValueBuilder serializedValue = serializedObjectValue()
       .serializationDataFormat(JSON_FORMAT_NAME);
     // no objectTypeName specified
 

@@ -99,7 +99,7 @@ public class VariableValueDto {
         if(value != null && !(value instanceof String)) {
           throw new InvalidRequestException(Status.BAD_REQUEST, "Must provide 'null' or String value for value of SerializableValue type '"+type+"'.");
         }
-        return ((SerializableValueType) valueType).createValueFromSerializedString((String) value, valueInfo);
+        return ((SerializableValueType) valueType).createValueFromSerialized((String) value, valueInfo);
       }
       else {
         return valueType.createValue(value, valueInfo);
@@ -139,7 +139,7 @@ public class VariableValueDto {
         dto.setValue(serializableValue.getValue());
       }
       else {
-        dto.setValue(serializableValue.getValueSerializedString());
+        dto.setValue(serializableValue.getValueSerialized());
       }
 
     }

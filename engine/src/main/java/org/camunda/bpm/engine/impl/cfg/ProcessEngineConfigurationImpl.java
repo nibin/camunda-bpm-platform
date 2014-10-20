@@ -18,6 +18,7 @@ import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -331,6 +332,8 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected VariableSerializers variableSerializers;
   protected ValueTypeResolver valueTypeResolver;
   protected String defaultSerializationFormat = JavaObjectSerializer.SERIALIZATION_DATA_FORMAT;
+  protected String defaultCharsetName = null;
+  protected Charset defaultCharset = null;
 
   protected ExpressionManager expressionManager;
   protected List<String> customScriptingEngineClasses;
@@ -436,6 +439,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   protected void init() {
     invokePreInit();
+    initDefaultCharset();
     initHistoryLevel();
     initHistoryEventProducer();
     initHistoryEventHandler();
@@ -1109,6 +1113,16 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     if(valueTypeResolver == null) {
       valueTypeResolver = new ValueTypeResolver();
     }
+  }
+
+  protected void initDefaultCharset() {
+    if(defaultCharset == null) {
+      if(defaultCharsetName == null) {
+        defaultCharsetName = "UTF-8";
+      }
+      defaultCharset = Charset.forName(defaultCharsetName);
+    }
+
   }
 
   protected void initSerialization() {
@@ -2385,4 +2399,19 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     this.valueTypeResolver = valueTypeResolver;
     return this;
   }
+
+  public ProcessEngineConfigurationImpl setDefaultCharsetName(String defaultCharsetName) {
+    this.defaultCharsetName = defaultCharsetName;
+    return this;
+  }
+
+  public ProcessEngineConfigurationImpl setDefaultCharset(Charset defautlCharset) {
+    this.defaultCharset = defautlCharset;
+    return this;
+  }
+
+  public Charset getDefaultCharset() {
+    return defaultCharset;
+  }
+
 }

@@ -43,6 +43,10 @@ public class JavaObjectSerializer extends AbstractObjectValueSerializer {
     return NAME;
   }
 
+  protected boolean isSerializationTextBased() {
+    return false;
+  }
+
   protected Object deserializeFromByteArray(byte[] bytes, String objectTypeName) throws Exception {
     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
     ObjectInputStream ois = null;

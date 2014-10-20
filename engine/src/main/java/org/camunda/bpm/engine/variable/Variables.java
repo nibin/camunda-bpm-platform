@@ -27,7 +27,7 @@ import org.camunda.bpm.engine.impl.core.variable.value.PrimitiveTypeValueImpl.Sh
 import org.camunda.bpm.engine.impl.core.variable.value.PrimitiveTypeValueImpl.StringValueImpl;
 import org.camunda.bpm.engine.impl.core.variable.value.UntypedValueImpl;
 import org.camunda.bpm.engine.impl.core.variable.value.builder.ObjectVariableBuilderImpl;
-import org.camunda.bpm.engine.impl.core.variable.value.builder.SerializedObjectVariableBuilderImpl;
+import org.camunda.bpm.engine.impl.core.variable.value.builder.SerializedObjectValueBuilderImpl;
 import org.camunda.bpm.engine.variable.value.BooleanValue;
 import org.camunda.bpm.engine.variable.value.BytesValue;
 import org.camunda.bpm.engine.variable.value.DateValue;
@@ -38,8 +38,8 @@ import org.camunda.bpm.engine.variable.value.ShortValue;
 import org.camunda.bpm.engine.variable.value.StringValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.camunda.bpm.engine.variable.value.builder.ObjectValueBuilder;
-import org.camunda.bpm.engine.variable.value.builder.SerializedObjectVariableBuilder;
-import org.camunda.bpm.engine.variable.value.builder.VariableValueBuilder;
+import org.camunda.bpm.engine.variable.value.builder.SerializedObjectValueBuilder;
+import org.camunda.bpm.engine.variable.value.builder.TypedValueBuilder;
 
 /**
  *
@@ -65,15 +65,11 @@ public class Variables {
     return new ObjectVariableBuilderImpl(value);
   }
 
-  public static SerializedObjectVariableBuilder serializedObjectValue() {
-    return new SerializedObjectVariableBuilderImpl();
+  public static SerializedObjectValueBuilder serializedObjectValue() {
+    return new SerializedObjectValueBuilderImpl();
   }
 
-  public static SerializedObjectVariableBuilder serializedObjectValue(byte[] value) {
-    return serializedObjectValue().serializedValue(value);
-  }
-
-  public static SerializedObjectVariableBuilder serializedObjectValue(String value) {
+  public static SerializedObjectValueBuilder serializedObjectValue(String value) {
     return serializedObjectValue().serializedValue(value);
   }
 
@@ -117,8 +113,8 @@ public class Variables {
     if(value == null) {
       return untypedNullValue();
     }
-    else if (value instanceof VariableValueBuilder<?>) {
-      return ((VariableValueBuilder<?>) value).create();
+    else if (value instanceof TypedValueBuilder<?>) {
+      return ((TypedValueBuilder<?>) value).create();
     }
     else if (value instanceof TypedValue) {
       return (TypedValue) value;

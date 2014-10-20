@@ -13,11 +13,14 @@
 package org.camunda.bpm.engine.rest.impl;
 
 import java.io.ByteArrayInputStream;
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.impl.util.StringUtil;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.BytesValue;
@@ -30,7 +33,7 @@ import org.camunda.bpm.engine.variable.value.TypedValue;
  */
 public class TypedValueUtil {
 
-  public static Response writeBinaryValueToResponse(ResponseBuilder responseBuilder, TypedValue typedValue) {
+  public static Response writeBinaryValueToResponse(ResponseBuilder responseBuilder, TypedValue typedValue, ProcessEngine processEngine) {
 
     MediaType defaultMediaType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
 
@@ -46,7 +49,8 @@ public class TypedValueUtil {
         responseBuilder.type(defaultMediaType);
       }
 
-      responseBuilder.entity(new ByteArrayInputStream(objectValue.getValueSerialized()));
+      byte[] valueBytes = StringUtil.toByteArray(objectValue.getValueSerialized(), processEngine);
+      responseBuilder.entity(new ByteArrayInputStream(valueBytes));
 
       return responseBuilder.build();
 

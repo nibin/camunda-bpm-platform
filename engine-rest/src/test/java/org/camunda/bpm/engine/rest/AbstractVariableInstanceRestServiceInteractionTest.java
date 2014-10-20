@@ -170,8 +170,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
 
   @Test
   public void testBinaryDataForSerializableVariable() {
-    String value = "some bytes";
-    final byte[] serializedValue = value.getBytes();
+    String serializedValue = "some bytes";
 
     VariableInstance variableInstanceMock =
         MockProvider.mockVariableInstance()
@@ -190,7 +189,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     byte[] responseBytes = response.getBody().asByteArray();
-    Assert.assertEquals(new String(serializedValue), new String(responseBytes));
+    Assert.assertEquals(serializedValue, new String(responseBytes));
     verify(variableInstanceQueryMock, never()).disableBinaryFetching();
     verify(variableInstanceQueryMock).disableObjectValueDeserialization();
 

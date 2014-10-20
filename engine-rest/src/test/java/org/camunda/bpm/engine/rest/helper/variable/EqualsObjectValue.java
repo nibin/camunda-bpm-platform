@@ -92,11 +92,11 @@ public class EqualsObjectValue extends EqualsTypedValue<ObjectValue, EqualsObjec
     }
 
     if (serializedValue == null) {
-      if (objectValue.getValueSerializedString() != null) {
+      if (objectValue.getValueSerialized() != null) {
         return false;
       }
     } else {
-      if (!serializedValue.equals(objectValue.getValueSerializedString())) {
+      if (!serializedValue.equals(objectValue.getValueSerialized())) {
         return false;
       }
     }

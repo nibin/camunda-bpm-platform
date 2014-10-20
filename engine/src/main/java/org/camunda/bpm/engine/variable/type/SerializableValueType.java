@@ -27,13 +27,6 @@ public interface SerializableValueType extends ValueType {
    * @param serializedValue the value in serialized form
    * @return the typed value for the value
    */
-  public SerializableValue createValueFromSerialized(byte[] serializedValue, Map<String, Object> valueInfo);
-
-  /**
-   * Creates a new TypedValue using this type.
-   * @param serializedValue the value in serialized form
-   * @return the typed value for the value
-   */
-  public SerializableValue createValueFromSerializedString(String serializedValue, Map<String, Object> valueInfo);
+  public SerializableValue createValueFromSerialized(String serializedValue, Map<String, Object> valueInfo);
 
 }

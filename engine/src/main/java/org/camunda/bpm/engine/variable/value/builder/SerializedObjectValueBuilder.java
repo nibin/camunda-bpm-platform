@@ -12,14 +12,16 @@
  */
 package org.camunda.bpm.engine.variable.value.builder;
 
-import org.camunda.bpm.engine.variable.value.TypedValue;
-
 /**
  * @author Daniel Meyer
  *
  */
-public interface VariableValueBuilder<T extends TypedValue> {
+public interface SerializedObjectValueBuilder extends ObjectValueBuilder {
 
-  T create();
+  SerializedObjectValueBuilder serializedValue(String value);
+
+  SerializedObjectValueBuilder objectTypeName(String typeName);
+
+  SerializedObjectValueBuilder serializationDataFormat(String dataFormatName);
 
 }

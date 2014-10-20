@@ -175,7 +175,7 @@ public abstract class AbstractHistoricVariableInstanceRestServiceInteractionTest
 
   @Test
   public void testBinaryDataForSerializableVariable() {
-    byte[] value = "some bytes".getBytes();
+    String value = "some bytes";
     HistoricVariableInstance variableInstanceMock =
         MockProvider.mockHistoricVariableInstance()
           .typedValue(Variables.serializedObjectValue(value).create())
@@ -191,8 +191,7 @@ public abstract class AbstractHistoricVariableInstanceRestServiceInteractionTest
       .contentType(ContentType.BINARY.toString())
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
-    byte[] responseBytes = response.getBody().asByteArray();
-    Assert.assertEquals(value, new String(responseBytes));
+    Assert.assertEquals(value, response.getBody().asString());
     verify(variableInstanceQueryMock, never()).disableBinaryFetching();
     verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
 

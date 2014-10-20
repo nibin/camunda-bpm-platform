@@ -18,7 +18,7 @@ import org.camunda.bpm.engine.variable.value.ObjectValue;
  * @author Daniel Meyer
  *
  */
-public interface ObjectValueBuilder extends VariableValueBuilder<ObjectValue> {
+public interface ObjectValueBuilder extends TypedValueBuilder<ObjectValue> {
 
   ObjectValueBuilder serializationDataFormat(String dataFormatName);
 

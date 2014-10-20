@@ -39,23 +39,14 @@ public interface SerializableValue extends TypedValue {
   Object getValue();
 
   /**
-   * Returns the serialized value.
-   *
-   * The serialized value is a snapshot of the state of the value as it is
-   * serialized to the process engine database.
-   */
-  byte[] getValueSerialized();
-
-  /**
-   * Returns the serialized value as String. In case the serializaton data format
+   * Returns the serialized value. In case the serializaton data format
    * (as returned by {@link #getSerializationDataFormat()}) is not text based,
-   * a base 64 encoded representation of the value provided by the method {@link #getValueSerialized()}
-   * is returned.
+   * a base 64 encoded representation of the value is returned
    *
    * The serialized value is a snapshot of the state of the value as it is
    * serialized to the process engine database.
    */
-  String getValueSerializedString();
+  String getValueSerialized();
 
   /**
    * The serialization format used to serialize this value.

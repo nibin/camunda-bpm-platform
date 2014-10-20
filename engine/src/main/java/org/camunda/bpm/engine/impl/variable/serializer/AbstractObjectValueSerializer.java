@@ -16,7 +16,9 @@ import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.core.variable.value.ObjectValueImpl;
 import org.camunda.bpm.engine.impl.core.variable.value.UntypedValueImpl;
+import org.camunda.bpm.engine.impl.digest._apacheCommonsCodec.Base64;
 import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
+import org.camunda.bpm.engine.impl.util.StringUtil;
 import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.ObjectValue;
@@ -51,7 +53,8 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
     ObjectValueImpl objectValue = (ObjectValueImpl) value;
 
     String objectTypeName = objectValue.getObjectTypeName();
-    byte[] serializedValue = null;
+    String serializedStringValue = objectValue.getValueSerialized();
+    byte[] serializedByteValue = null;
 
     if(objectValue.isDeserialized()) {
       Object objectToSerialize = objectValue.getValue();
@@ -62,9 +65,10 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
         }
         // serialize to byte array
         try {
-          serializedValue = serializeToByteArray(objectToSerialize);
+          serializedByteValue = serializeToByteArray(objectToSerialize);
+          serializedStringValue = getSerializedStringValue(serializedByteValue);
           if(valueFields.getByteArrayValue() == null && objectToSerialize != null) {
-            dirtyCheckOnFlush(objectToSerialize, serializedValue, valueFields);
+            dirtyCheckOnFlush(objectToSerialize, serializedByteValue, valueFields);
           }
         } catch(Exception e) {
           throw new ProcessEngineException("Cannot serialize object in variable '"+valueFields.getName()+"': "+e.getMessage(), e);
@@ -72,41 +76,45 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
       }
     }
     else {
-      serializedValue = objectValue.getValueSerialized();
-      if(objectTypeName == null && serializedValue != null) {
-        throw new ProcessEngineException("Cannot write serialized value for variable '"+valueFields.getName()+"': no 'objectTypeName' provided for non-null value.");
+      if (serializedStringValue != null) {
+        if (objectTypeName == null) {
+          throw new ProcessEngineException("Cannot write serialized value for variable '" + valueFields.getName() + "': no 'objectTypeName' provided for non-null value.");
+        }
+        serializedByteValue = getSerializedBytesValue(serializedStringValue);
       }
     }
 
     // write value and type to fields.
-    writeToValueFields(valueFields, objectTypeName, serializedValue);
+    writeToValueFields(valueFields, objectTypeName, serializedByteValue);
 
     // update the ObjectValue to keep it consistent with value fields.
-    updateObjectValue(objectValue, objectTypeName, serializedValue);
+    updateObjectValue(objectValue, objectTypeName, serializedStringValue);
   }
 
   public ObjectValue readValue(ValueFields valueFields, boolean deserializeObjectValue) {
 
-    byte[] serializedValue = readSerializedValueFromFields(valueFields);
+    byte[] serializedByteValue = readSerializedValueFromFields(valueFields);
+    String serializedStringValue = getSerializedStringValue(serializedByteValue);
     String objectTypeName = readObjectNameFromFields(valueFields);
+
 
     if(deserializeObjectValue) {
       Object deserializedObject = null;
-      if(serializedValue != null) {
+      if(serializedByteValue != null) {
         try {
-          deserializedObject = deserializeFromByteArray(serializedValue, objectTypeName);
+          deserializedObject = deserializeFromByteArray(serializedByteValue, objectTypeName);
         } catch (Exception e) {
           throw new ProcessEngineException("Cannot deserialize object in variable '"+valueFields.getName()+"': "+e.getMessage(), e);
         }
       }
-      ObjectValueImpl objectValue = new ObjectValueImpl(deserializedObject, serializedValue, serializationDataFormat, objectTypeName, true);
+      ObjectValueImpl objectValue = new ObjectValueImpl(deserializedObject, serializedStringValue, serializationDataFormat, objectTypeName, true);
       if(deserializedObject != null) {
-        dirtyCheckOnFlush(deserializedObject, serializedValue, valueFields);
+        dirtyCheckOnFlush(deserializedObject, serializedByteValue, valueFields);
       }
       return objectValue;
     }
     else {
-      return new ObjectValueImpl(null, serializedValue, serializationDataFormat, objectTypeName, false);
+      return new ObjectValueImpl(null, serializedStringValue, serializationDataFormat, objectTypeName, false);
     }
   }
 
@@ -116,7 +124,7 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
     valueFields.setTextValue2(objectTypeName);
   }
 
-  protected void updateObjectValue(ObjectValueImpl objectValue, String objectTypeName, byte[] serializedValue) {
+  protected void updateObjectValue(ObjectValueImpl objectValue, String objectTypeName, String serializedValue) {
     objectValue.setSerializedValue(serializedValue);
     objectValue.setSerializationDataFormat(serializationDataFormat);
     objectValue.setObjectTypeName(objectTypeName);
@@ -128,6 +136,31 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
 
   protected byte[] readSerializedValueFromFields(ValueFields valueFields) {
     return ByteArrayValueSerializer.getBytes(valueFields);
+  }
+
+  protected String getSerializedStringValue(byte[] serializedByteValue) {
+    if(serializedByteValue != null) {
+      if(!isSerializationTextBased()) {
+        serializedByteValue = Base64.encodeBase64(serializedByteValue);
+      }
+      return StringUtil.fromBytes(serializedByteValue);
+    }
+    else {
+      return null;
+    }
+  }
+
+  protected byte[] getSerializedBytesValue(String serializedStringValue) {
+    if(serializedStringValue != null) {
+      byte[] serializedByteValue = StringUtil.toByteArray(serializedStringValue);
+      if (!isSerializationTextBased()) {
+        serializedByteValue = Base64.decodeBase64(serializedByteValue);
+      }
+      return serializedByteValue;
+    }
+    else {
+      return null;
+    }
   }
 
   protected boolean canWriteValue(TypedValue typedValue) {
@@ -219,5 +252,11 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
    * @throws exception in case the object cannot be deserialized
    */
   protected abstract Object deserializeFromByteArray(byte[] object, String objectTypeName) throws Exception;
+
+  /**
+   * Return true if the serialization is text based. Return false otherwise
+   *
+   */
+  protected abstract boolean isSerializationTextBased();
 
 }

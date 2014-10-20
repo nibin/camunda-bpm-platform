@@ -172,8 +172,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
   @Test
   public void testBinaryDataForSerializableVariable() {
-    String value = "some bytes";
-    final byte[] serializedValue = value.getBytes();
+    String serializedValue = "some bytes";
 
     HistoricVariableUpdate detailMock =
         MockProvider.mockHistoricVariableUpdate()
@@ -191,8 +190,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
       .contentType(ContentType.BINARY.toString())
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
-    byte[] responseBytes = response.getBody().asByteArray();
-    Assert.assertEquals(new String(serializedValue), new String(responseBytes));
+    Assert.assertEquals(serializedValue, response.getBody().asString());
     verify(historicDetailQueryMock, never()).disableBinaryFetching();
     verify(historicDetailQueryMock).disableCustomObjectDeserialization();
 

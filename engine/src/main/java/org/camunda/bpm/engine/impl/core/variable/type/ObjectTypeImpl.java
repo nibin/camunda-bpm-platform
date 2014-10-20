@@ -21,7 +21,7 @@ import org.camunda.bpm.engine.variable.value.ObjectValue;
 import org.camunda.bpm.engine.variable.value.SerializableValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.camunda.bpm.engine.variable.value.builder.ObjectValueBuilder;
-import org.camunda.bpm.engine.variable.value.builder.SerializedObjectVariableBuilder;
+import org.camunda.bpm.engine.variable.value.builder.SerializedObjectValueBuilder;
 
 /**
  * @author Daniel Meyer
@@ -75,8 +75,8 @@ public class ObjectTypeImpl extends AbstractValueTypeImpl implements Serializabl
     return valueInfo;
   }
 
-  public SerializableValue createValueFromSerialized(byte[] serializedValue, Map<String, Object> valueInfo) {
-    SerializedObjectVariableBuilder builder = Variables.serializedObjectValue(serializedValue);
+  public SerializableValue createValueFromSerialized(String serializedValue, Map<String, Object> valueInfo) {
+    SerializedObjectValueBuilder builder = Variables.serializedObjectValue(serializedValue);
 
     if(valueInfo != null) {
       applyValueInfo(builder, valueInfo);
@@ -88,8 +88,8 @@ public class ObjectTypeImpl extends AbstractValueTypeImpl implements Serializabl
   protected void applyValueInfo(ObjectValueBuilder builder, Map<String, Object> valueInfo) {
 
     String objectValueTypeName = (String) valueInfo.get(VALUE_INFO_OBJECT_TYPE_NAME);
-    if (builder instanceof SerializedObjectVariableBuilder) {
-      ((SerializedObjectVariableBuilder) builder).objectTypeName(objectValueTypeName);
+    if (builder instanceof SerializedObjectValueBuilder) {
+      ((SerializedObjectValueBuilder) builder).objectTypeName(objectValueTypeName);
     }
 
     String serializationDataFormat = (String) valueInfo.get(VALUE_INFO_SERIALIZATION_DATA_FORMAT);
@@ -97,16 +97,6 @@ public class ObjectTypeImpl extends AbstractValueTypeImpl implements Serializabl
       builder.serializationDataFormat(serializationDataFormat);
     }
 
-  }
-
-  public SerializableValue createValueFromSerializedString(String serializedValue, Map<String, Object> valueInfo) {
-    SerializedObjectVariableBuilder builder = Variables.serializedObjectValue(serializedValue);
-
-    if(valueInfo != null) {
-      applyValueInfo(builder, valueInfo);
-    }
-
-    return builder.create();
   }
 
 }

@@ -68,7 +68,7 @@ public class VariableInstanceResourceImpl implements VariableInstanceResource {
       .singleResult();
     if(variableInstance != null) {
 
-      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableInstance.getTypedValue());
+      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableInstance.getTypedValue(), engine);
 
     } else {
       throw new InvalidRequestException(Status.NOT_FOUND, "Variable instance with Id '"+variableId + "' does not exist.");

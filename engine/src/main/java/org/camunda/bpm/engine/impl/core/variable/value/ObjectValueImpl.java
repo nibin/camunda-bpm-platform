@@ -30,14 +30,12 @@ public class ObjectValueImpl extends AbstractTypedValue<Object> implements Objec
   protected String objectTypeName;
 
   protected String serializationDataFormat;
-
-  protected byte[] serializedValue;
-
+  protected String serializedValue;
   protected boolean isDeserialized;
 
   public ObjectValueImpl(
       Object deserializedValue,
-      byte[] serializedValue,
+      String serializedValue,
       String serializationDataFormat,
       String objectTypeName,
       boolean isDeserialized) {
@@ -70,15 +68,11 @@ public class ObjectValueImpl extends AbstractTypedValue<Object> implements Objec
     this.objectTypeName = objectTypeName;
   }
 
-  public byte[] getValueSerialized() {
+  public String getValueSerialized() {
     return serializedValue;
   }
 
-  public String getValueSerializedString() {
-    return new String(serializedValue);
-  }
-
-  public void setSerializedValue(byte[] serializedValue) {
+  public void setSerializedValue(String serializedValue) {
     this.serializedValue = serializedValue;
   }
 
@@ -128,7 +122,7 @@ public class ObjectValueImpl extends AbstractTypedValue<Object> implements Objec
         + ", isDeserialized=" + isDeserialized
         + ", serializationDataFormat=" + serializationDataFormat
         + ", objectTypeName=" + objectTypeName
-        + ", serializedValue="+ (serializedValue != null ? (serializedValue.length + " bytes") : null)
+        + ", serializedValue="+ (serializedValue != null ? (serializedValue.length() + " chars") : null)
         + "]";
   }
 

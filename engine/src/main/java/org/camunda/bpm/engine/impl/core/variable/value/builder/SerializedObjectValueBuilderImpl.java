@@ -12,29 +12,27 @@
  */
 package org.camunda.bpm.engine.impl.core.variable.value.builder;
 
-import java.nio.charset.Charset;
-
 import org.camunda.bpm.engine.impl.core.variable.value.ObjectValueImpl;
 import org.camunda.bpm.engine.variable.value.ObjectValue;
-import org.camunda.bpm.engine.variable.value.builder.SerializedObjectVariableBuilder;
+import org.camunda.bpm.engine.variable.value.builder.SerializedObjectValueBuilder;
 
 /**
  * @author Daniel Meyer
  *
  */
-public class SerializedObjectVariableBuilderImpl implements SerializedObjectVariableBuilder {
+public class SerializedObjectValueBuilderImpl implements SerializedObjectValueBuilder {
 
   protected ObjectValueImpl variableValue;
 
-  public SerializedObjectVariableBuilderImpl() {
+  public SerializedObjectValueBuilderImpl() {
     variableValue = new ObjectValueImpl(null, null, null, null, false);
   }
 
-  public SerializedObjectVariableBuilderImpl(ObjectValue value) {
+  public SerializedObjectValueBuilderImpl(ObjectValue value) {
     variableValue = (ObjectValueImpl) value;
   }
 
-  public SerializedObjectVariableBuilderImpl serializationDataFormat(String dataFormatName) {
+  public SerializedObjectValueBuilderImpl serializationDataFormat(String dataFormatName) {
     variableValue.setSerializationDataFormat(dataFormatName);
     return this;
   }
@@ -43,18 +41,14 @@ public class SerializedObjectVariableBuilderImpl implements SerializedObjectVari
     return variableValue;
   }
 
-  public SerializedObjectVariableBuilder objectTypeName(String typeName) {
+  public SerializedObjectValueBuilder objectTypeName(String typeName) {
     variableValue.setObjectTypeName(typeName);
     return this;
   }
 
-  public SerializedObjectVariableBuilder serializedValue(byte[] value) {
+  public SerializedObjectValueBuilder serializedValue(String value) {
     variableValue.setSerializedValue(value);
     return this;
-  }
-
-  public SerializedObjectVariableBuilder serializedValue(String value) {
-    return serializedValue(value.getBytes(Charset.forName("utf-8")));
   }
 
 }

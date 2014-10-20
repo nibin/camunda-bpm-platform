@@ -46,6 +46,11 @@ public class SpinObjectValueSerializer extends AbstractObjectValueSerializer {
     return name;
   }
 
+  protected boolean isSerializationTextBased() {
+    // for the moment we assume that all spin data formats are text based.
+    return true;
+  }
+
   protected String getTypeNameForDeserialized(Object deserializedObject) {
     return dataFormat.getCanonicalTypeName(deserializedObject);
   }
