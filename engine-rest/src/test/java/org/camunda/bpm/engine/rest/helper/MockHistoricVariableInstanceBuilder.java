@@ -108,7 +108,7 @@ public class MockHistoricVariableInstanceBuilder {
       if (objectValue.isDeserialized()) {
         when(mockVariable.getValue()).thenReturn(value.getValue());
       } else {
-        when(mockVariable.getValue()).thenThrow(new ProcessEngineException("cannot deserialize"));
+        when(mockVariable.getValue()).thenReturn(null);
       }
     } else {
       when(mockVariable.getValue()).thenReturn(value.getValue());

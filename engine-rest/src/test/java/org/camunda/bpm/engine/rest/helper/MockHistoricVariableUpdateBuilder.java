@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import org.camunda.bpm.engine.history.HistoricVariableUpdate;
 import org.camunda.bpm.engine.impl.calendar.DateTimeUtil;
+import org.camunda.bpm.engine.variable.value.ObjectValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
@@ -91,7 +92,18 @@ public class MockHistoricVariableUpdateBuilder {
     when(mockVariable.getId()).thenReturn(id);
     when(mockVariable.getVariableName()).thenReturn(name);
     when(mockVariable.getVariableTypeName()).thenReturn(typedValue.getType().getName());
-    when(mockVariable.getValue()).thenReturn(typedValue.getValue());
+
+    if (ObjectValue.class.isAssignableFrom(typedValue.getClass())) {
+      ObjectValue objectValue = (ObjectValue) typedValue;
+      if (objectValue.isDeserialized()) {
+        when(mockVariable.getValue()).thenReturn(typedValue.getValue());
+      } else {
+        when(mockVariable.getValue()).thenReturn(null);
+      }
+    } else {
+      when(mockVariable.getValue()).thenReturn(typedValue.getValue());
+    }
+
     when(mockVariable.getTypedValue()).thenReturn(typedValue);
     when(mockVariable.getProcessInstanceId()).thenReturn(processInstanceId);
     when(mockVariable.getErrorMessage()).thenReturn(errorMessage);
