@@ -16,35 +16,39 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.response.Response;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
+
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.delegate.ProcessEngineVariableType;
 import org.camunda.bpm.engine.impl.RuntimeServiceImpl;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.helper.EqualsList;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
 import org.camunda.bpm.engine.rest.util.VariablesBuilder;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.EventSubscriptionQuery;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ExecutionQuery;
+import org.camunda.bpm.engine.variable.type.ValueType;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.Response;
 
 public abstract class AbstractExecutionRestServiceInteractionTest extends AbstractRestServiceTest {
 
@@ -677,26 +681,21 @@ public abstract class AbstractExecutionRestServiceInteractionTest extends Abstra
     given()
       .pathParam("id", MockProvider.EXAMPLE_EXECUTION_ID).pathParam("varId", variableKey)
       .multiPart("data", "unspecified", bytes)
-      .multiPart("variableType", ProcessEngineVariableType.SERIALIZABLE.getName(), MediaType.TEXT_PLAIN)
+      .multiPart("variableType", ValueType.OBJECT, MediaType.TEXT_PLAIN)
     .expect()
       .statusCode(Status.NO_CONTENT.getStatusCode())
     .when()
       .post(SINGLE_EXECUTION_LOCAL_BINARY_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableLocalFromSerialized(
-        eq(MockProvider.EXAMPLE_EXECUTION_ID), eq(variableKey),
-        eq(bytes), eq(ProcessEngineVariableType.SERIALIZABLE.getName()), isNull(Map.class));
+    verify(runtimeServiceMock).setVariableLocal(eq(MockProvider.EXAMPLE_EXECUTION_ID), eq(variableKey),
+        EqualsObjectValue.objectValueMatcher().serializedValue(bytes));
   }
 
   @Test
   public void testPutSingleLocalVariableFromSerialized() throws Exception {
     String serializedValue = "{\"prop\" : \"value\"}";
-    Map<String, Object> config = new HashMap<String, Object>();
-    config.put(ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID, "aDataFormat");
-    config.put(ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE, "aRootType");
-
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(serializedValue, ProcessEngineVariableType.SPIN.getName(), config);
+        .getObjectValueMap(serializedValue, ValueType.OBJECT.getName(), "aDataFormat", "aRootType");
 
     String variableKey = "aVariableKey";
 
@@ -709,9 +708,12 @@ public abstract class AbstractExecutionRestServiceInteractionTest extends Abstra
     .when()
       .put(SINGLE_EXECUTION_LOCAL_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableLocalFromSerialized(
-        eq(MockProvider.EXAMPLE_EXECUTION_ID), eq(variableKey),
-        eq(serializedValue), eq(ProcessEngineVariableType.SPIN.getName()), argThat(new EqualsMap(config)));
+    verify(runtimeServiceMock).setVariableLocal(eq(MockProvider.EXAMPLE_EXECUTION_ID), eq(variableKey),
+        EqualsObjectValue
+          .objectValueMatcher()
+          .serializationFormat("aDataFormat")
+          .objectTypeName("aRootType")
+          .serializedStringValue(serializedValue));
   }
 
   @Test
@@ -719,13 +721,13 @@ public abstract class AbstractExecutionRestServiceInteractionTest extends Abstra
     String serializedValue = "{\"prop\" : \"value\"}";
 
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(serializedValue, "aNonExistingType", null);
+        .getObjectValueMap(serializedValue, "aNonExistingType", null, null);
 
     String variableKey = "aVariableKey";
 
     doThrow(new BadUserRequestException("expected exception"))
       .when(runtimeServiceMock)
-      .setVariableLocalFromSerialized(anyString(), anyString(), any(), anyString(), any(Map.class));
+      .setVariableLocal(anyString(), anyString(), any());
 
     given()
       .pathParam("id", MockProvider.EXAMPLE_EXECUTION_ID).pathParam("varId", variableKey)
@@ -743,18 +745,20 @@ public abstract class AbstractExecutionRestServiceInteractionTest extends Abstra
   public void testPutSingleLocalVariableFromSerializedWithNoValue() {
     String variableKey = "aVariableKey";
 
-    Map<String, Object> config = new HashMap<String, Object>();
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(null, ProcessEngineVariableType.SPIN.getName(), config);
+        .getObjectValueMap(null, ValueType.OBJECT.getName(), null, null);
 
     given().pathParam("id", MockProvider.EXAMPLE_EXECUTION_ID).pathParam("varId", variableKey)
       .contentType(ContentType.JSON).body(requestJson)
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().put(SINGLE_EXECUTION_LOCAL_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableLocalFromSerialized(
-        eq(MockProvider.EXAMPLE_EXECUTION_ID), eq(variableKey),
-        isNull(), eq(ProcessEngineVariableType.SPIN.getName()), argThat(new EqualsMap(config)));
+    verify(runtimeServiceMock).setVariableLocal(eq(MockProvider.EXAMPLE_EXECUTION_ID), eq(variableKey),
+        EqualsObjectValue
+          .objectValueMatcher()
+          .serializationFormat(null)
+          .objectTypeName(null)
+          .serializedValue(null));
   }
 
   @Test

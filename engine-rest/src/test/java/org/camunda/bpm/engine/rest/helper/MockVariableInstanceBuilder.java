@@ -15,7 +15,9 @@ package org.camunda.bpm.engine.rest.helper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.runtime.VariableInstance;
+import org.camunda.bpm.engine.variable.value.ObjectValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
@@ -142,7 +144,18 @@ public class MockVariableInstanceBuilder {
     when(mockVariable.getId()).thenReturn(id);
     when(mockVariable.getName()).thenReturn(name);
     when(mockVariable.getTypeName()).thenReturn(typedValue.getType().getName());
-    when(mockVariable.getValue()).thenReturn(typedValue.getValue());
+
+    if (ObjectValue.class.isAssignableFrom(typedValue.getClass())) {
+      ObjectValue objectValue = (ObjectValue) typedValue;
+      if (objectValue.isDeserialized()) {
+        when(mockVariable.getValue()).thenReturn(typedValue.getValue());
+      } else {
+        when(mockVariable.getValue()).thenThrow(new ProcessEngineException("cannot deserialize"));
+      }
+    } else {
+      when(mockVariable.getValue()).thenReturn(typedValue.getValue());
+    }
+
     when(mockVariable.getTypedValue()).thenReturn(typedValue);
     when(mockVariable.getProcessInstanceId()).thenReturn(processInstanceId);
     when(mockVariable.getExecutionId()).thenReturn(executionId);

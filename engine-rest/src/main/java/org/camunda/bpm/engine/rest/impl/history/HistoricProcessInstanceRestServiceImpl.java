@@ -26,12 +26,15 @@ import org.camunda.bpm.engine.rest.dto.history.HistoricProcessInstanceQueryDto;
 import org.camunda.bpm.engine.rest.history.HistoricProcessInstanceRestService;
 import org.camunda.bpm.engine.rest.sub.history.HistoricProcessInstanceResource;
 import org.camunda.bpm.engine.rest.sub.history.impl.HistoricProcessInstanceResourceImpl;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class HistoricProcessInstanceRestServiceImpl implements HistoricProcessInstanceRestService {
 
+  protected ObjectMapper objectMapper;
   protected ProcessEngine processEngine;
 
-  public HistoricProcessInstanceRestServiceImpl(ProcessEngine processEngine) {
+  public HistoricProcessInstanceRestServiceImpl(ObjectMapper objectMapper, ProcessEngine processEngine) {
+    this.objectMapper = objectMapper;
     this.processEngine = processEngine;
   }
 
@@ -42,7 +45,7 @@ public class HistoricProcessInstanceRestServiceImpl implements HistoricProcessIn
 
   @Override
   public List<HistoricProcessInstanceDto> getHistoricProcessInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    HistoricProcessInstanceQueryDto queryHistoriProcessInstanceDto = new HistoricProcessInstanceQueryDto(uriInfo.getQueryParameters());
+    HistoricProcessInstanceQueryDto queryHistoriProcessInstanceDto = new HistoricProcessInstanceQueryDto(objectMapper, uriInfo.getQueryParameters());
     return queryHistoricProcessInstances(queryHistoriProcessInstanceDto, firstResult, maxResults);
   }
 
@@ -77,7 +80,7 @@ public class HistoricProcessInstanceRestServiceImpl implements HistoricProcessIn
 
   @Override
   public CountResultDto getHistoricProcessInstancesCount(UriInfo uriInfo) {
-    HistoricProcessInstanceQueryDto queryDto = new HistoricProcessInstanceQueryDto(uriInfo.getQueryParameters());
+    HistoricProcessInstanceQueryDto queryDto = new HistoricProcessInstanceQueryDto(objectMapper, uriInfo.getQueryParameters());
     return queryHistoricProcessInstancesCount(queryDto);
   }
 

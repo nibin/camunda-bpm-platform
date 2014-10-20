@@ -15,7 +15,6 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
@@ -30,16 +29,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class MessageRestServiceImpl extends AbstractRestProcessEngineAware implements MessageRestService {
 
-  @Context
-  protected ObjectMapper objectMapper;
-
   public MessageRestServiceImpl() {
     super();
   }
 
   public MessageRestServiceImpl(String engineName, ObjectMapper objectMapper) {
-    super(engineName);
-    this.objectMapper = objectMapper;
+    super(engineName, objectMapper);
   }
 
   @Override
@@ -52,6 +47,7 @@ public class MessageRestServiceImpl extends AbstractRestProcessEngineAware imple
     RuntimeService runtimeService = processEngine.getRuntimeService();
 
     try {
+      ObjectMapper objectMapper = getObjectMapper();
       Map<String, Object> correlationKeys = VariableValueDto.toMap(messageDto.getCorrelationKeys(), processEngine, objectMapper);
       Map<String, Object> processVariables = VariableValueDto.toMap(messageDto.getProcessVariables(), processEngine, objectMapper);
 
@@ -61,7 +57,7 @@ public class MessageRestServiceImpl extends AbstractRestProcessEngineAware imple
           .processInstanceBusinessKey(messageDto.getBusinessKey());
 
       if (correlationKeys != null && !correlationKeys.isEmpty()) {
-        for (Entry<String, Object> correlationKey : correlationKeys.entrySet()) {
+        for (Entry<String, Object> correlationKey  : correlationKeys.entrySet()) {
           String name = correlationKey.getKey();
           Object value = correlationKey.getValue();
           correlation.processInstanceVariableEquals(name, value);

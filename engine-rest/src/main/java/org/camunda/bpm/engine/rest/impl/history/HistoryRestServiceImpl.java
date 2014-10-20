@@ -36,17 +36,17 @@ public class HistoryRestServiceImpl extends AbstractRestProcessEngineAware imple
 
   @Override
   public HistoricProcessInstanceRestService getProcessInstanceService() {
-    return new HistoricProcessInstanceRestServiceImpl(getProcessEngine());
+    return new HistoricProcessInstanceRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   @Override
   public HistoricActivityInstanceRestService getActivityInstanceService() {
-    return new HistoricActivityInstanceRestServiceImpl(getProcessEngine());
+    return new HistoricActivityInstanceRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   @Override
   public HistoricVariableInstanceRestService getVariableInstanceService() {
-    return new HistoricVariableInstanceRestServiceImpl(getProcessEngine());
+    return new HistoricVariableInstanceRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   @Override
@@ -56,22 +56,22 @@ public class HistoryRestServiceImpl extends AbstractRestProcessEngineAware imple
 
   @Override
   public UserOperationLogRestService getUserOperationLogRestService() {
-    return new UserOperationLogRestServiceImpl(getProcessEngine());
+    return new UserOperationLogRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   @Override
   public HistoricDetailRestService getDetailService() {
-    return new HistoricDetailRestServiceImpl(getProcessEngine());
+    return new HistoricDetailRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   @Override
   public HistoricTaskInstanceRestService getTaskInstanceService() {
-    return new HistoricTaskInstanceRestServiceImpl(getProcessEngine());
+    return new HistoricTaskInstanceRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   @Override
   public HistoricIncidentRestService getIncidentService() {
-    return new HistoricIncidentRestServiceImpl(getProcessEngine());
+    return new HistoricIncidentRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
 }

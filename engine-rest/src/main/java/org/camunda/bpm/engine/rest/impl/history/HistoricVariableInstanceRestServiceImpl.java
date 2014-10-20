@@ -26,12 +26,15 @@ import org.camunda.bpm.engine.rest.dto.history.HistoricVariableInstanceQueryDto;
 import org.camunda.bpm.engine.rest.history.HistoricVariableInstanceRestService;
 import org.camunda.bpm.engine.rest.sub.history.HistoricVariableInstanceResource;
 import org.camunda.bpm.engine.rest.sub.history.impl.HistoricVariableInstanceResourceImpl;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class HistoricVariableInstanceRestServiceImpl implements HistoricVariableInstanceRestService {
 
+  protected ObjectMapper objectMapper;
   protected ProcessEngine processEngine;
 
-  public HistoricVariableInstanceRestServiceImpl(ProcessEngine processEngine) {
+  public HistoricVariableInstanceRestServiceImpl(ObjectMapper objectMapper,ProcessEngine processEngine) {
+    this.objectMapper = objectMapper;
     this.processEngine = processEngine;
   }
 
@@ -41,7 +44,7 @@ public class HistoricVariableInstanceRestServiceImpl implements HistoricVariable
 
   @Override
   public List<HistoricVariableInstanceDto> getHistoricVariableInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    HistoricVariableInstanceQueryDto queryDto = new HistoricVariableInstanceQueryDto(uriInfo.getQueryParameters());
+    HistoricVariableInstanceQueryDto queryDto = new HistoricVariableInstanceQueryDto(objectMapper, uriInfo.getQueryParameters());
     return queryHistoricVariableInstances(queryDto, firstResult, maxResults);
   }
 
@@ -79,7 +82,7 @@ public class HistoricVariableInstanceRestServiceImpl implements HistoricVariable
 
   @Override
   public CountResultDto getHistoricVariableInstancesCount(UriInfo uriInfo) {
-    HistoricVariableInstanceQueryDto queryDto = new HistoricVariableInstanceQueryDto(uriInfo.getQueryParameters());
+    HistoricVariableInstanceQueryDto queryDto = new HistoricVariableInstanceQueryDto(objectMapper, uriInfo.getQueryParameters());
     return queryHistoricVariableInstancesCount(queryDto);
   }
 

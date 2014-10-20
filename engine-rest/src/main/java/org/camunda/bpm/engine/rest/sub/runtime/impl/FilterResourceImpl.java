@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
@@ -63,7 +64,6 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class FilterResourceImpl extends AbstractAuthorizedRestResource implements FilterResource {
 
-  protected ObjectMapper objectMapper;
   protected String filterId;
 
   protected FilterService filterService;
@@ -90,9 +90,8 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
   }
 
   public FilterResourceImpl(String processEngineName, ObjectMapper objectMapper, String filterId, String relativeRootResourcePath) {
-    super(processEngineName, FILTER, filterId);
+    super(processEngineName, FILTER, filterId, objectMapper);
     this.relativeRootResourcePath = relativeRootResourcePath;
-    this.objectMapper = objectMapper;
     this.filterId = filterId;
     filterService = processEngine.getFilterService();
   }
@@ -339,7 +338,7 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
       Class<? extends AbstractQueryDto<?>> queryDtoClass = QUERY_MAPPING.get(resourceType);
       if (queryDtoClass != null) {
         try {
-          AbstractQueryDto<?> queryDto = objectMapper.readValue(queryString, queryDtoClass);
+          AbstractQueryDto<?> queryDto = getObjectMapper().readValue(queryString, queryDtoClass);
           if (queryDto != null) {
             return queryDto.toQuery(processEngine);
           }

@@ -77,7 +77,7 @@ public class CaseDefinitionRestServiceImpl extends AbstractRestProcessEngineAwar
 
   @Override
   public List<CaseDefinitionDto> getCaseDefinitions(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    CaseDefinitionQueryDto queryDto = new CaseDefinitionQueryDto(uriInfo.getQueryParameters());
+    CaseDefinitionQueryDto queryDto = new CaseDefinitionQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     List<CaseDefinitionDto> definitions = new ArrayList<CaseDefinitionDto>();
 
     ProcessEngine engine = getProcessEngine();
@@ -110,7 +110,7 @@ public class CaseDefinitionRestServiceImpl extends AbstractRestProcessEngineAwar
 
   @Override
   public CountResultDto getCaseDefinitionsCount(UriInfo uriInfo) {
-    CaseDefinitionQueryDto queryDto = new CaseDefinitionQueryDto(uriInfo.getQueryParameters());
+    CaseDefinitionQueryDto queryDto = new CaseDefinitionQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
 
     ProcessEngine engine = getProcessEngine();
     CaseDefinitionQuery query = queryDto.toQuery(engine);

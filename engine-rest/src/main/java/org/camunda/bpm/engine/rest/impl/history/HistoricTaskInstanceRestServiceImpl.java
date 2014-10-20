@@ -24,6 +24,7 @@ import org.camunda.bpm.engine.rest.dto.CountResultDto;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceDto;
 import org.camunda.bpm.engine.rest.dto.history.HistoricTaskInstanceQueryDto;
 import org.camunda.bpm.engine.rest.history.HistoricTaskInstanceRestService;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * @author Roman Smirnov
@@ -31,15 +32,17 @@ import org.camunda.bpm.engine.rest.history.HistoricTaskInstanceRestService;
  */
 public class HistoricTaskInstanceRestServiceImpl implements HistoricTaskInstanceRestService {
 
+  protected ObjectMapper objectMapper;
   protected ProcessEngine processEngine;
 
-  public HistoricTaskInstanceRestServiceImpl(ProcessEngine processEngine) {
+  public HistoricTaskInstanceRestServiceImpl(ObjectMapper objectMapper, ProcessEngine processEngine) {
+    this.objectMapper = objectMapper;
     this.processEngine = processEngine;
   }
 
   @Override
   public List<HistoricTaskInstanceDto> getHistoricTaskInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    HistoricTaskInstanceQueryDto queryDto = new HistoricTaskInstanceQueryDto(uriInfo.getQueryParameters());
+    HistoricTaskInstanceQueryDto queryDto = new HistoricTaskInstanceQueryDto(objectMapper, uriInfo.getQueryParameters());
     return queryHistoricTaskInstances(queryDto, firstResult, maxResults);
   }
 
@@ -74,7 +77,7 @@ public class HistoricTaskInstanceRestServiceImpl implements HistoricTaskInstance
 
   @Override
   public CountResultDto getHistoricTaskInstancesCount(UriInfo uriInfo) {
-    HistoricTaskInstanceQueryDto queryDto = new HistoricTaskInstanceQueryDto(uriInfo.getQueryParameters());
+    HistoricTaskInstanceQueryDto queryDto = new HistoricTaskInstanceQueryDto(objectMapper, uriInfo.getQueryParameters());
     return queryHistoricTaskInstancesCount(queryDto);
   }
 

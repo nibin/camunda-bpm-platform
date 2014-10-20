@@ -12,13 +12,18 @@
  */
 package org.camunda.bpm.engine.rest.dto.converter;
 
-import java.util.Arrays;
-import java.util.List;
+import org.codehaus.jackson.map.ObjectMapper;
 
-public class StringListConverter extends JacksonAwareStringToTypeConverter<List<String>> {
+/**
+ * @author Thorben Lindhauer
+ */
+public abstract class JacksonAwareStringToTypeConverter<T> implements StringToTypeConverter<T> {
 
-  @Override
-  public List<String> convertQueryParameterToType(String value) {
-    return Arrays.asList(value.split(","));
+  protected ObjectMapper objectMapper;
+
+  public abstract T convertQueryParameterToType(String value);
+
+  public void setObjectMapper(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
   }
 }

@@ -13,19 +13,24 @@
 package org.camunda.bpm.engine.rest;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.mockito.Mockito.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.impl.variable.ByteArrayType;
-import org.camunda.bpm.engine.impl.variable.SerializableType;
+import org.camunda.bpm.engine.impl.variable.serializer.JavaObjectSerializer;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
-import org.camunda.bpm.engine.rest.helper.MockSerializedValueBuilder;
 import org.camunda.bpm.engine.rest.helper.MockVariableInstanceBuilder;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
+import org.camunda.bpm.engine.variable.Variables;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,8 +78,8 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     .and()
       .body("id", equalTo(builder.getId()))
       .body("name", equalTo(builder.getName()))
-      .body("type", equalTo(builder.getValueTypeName()))
-      .body("value", equalTo(builder.getTypedValue()))
+      .body("type", equalTo(builder.getTypedValue().getType().getName()))
+      .body("value", equalTo(builder.getTypedValue().getValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("executionId", equalTo(builder.getExecutionId()))
       .body("caseInstanceId", equalTo(builder.getCaseInstanceId()))
@@ -93,15 +98,10 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
 
   @Test
   public void testGetSingleVariableInstanceForBinaryVariable() {
-    final ByteArrayType type = new ByteArrayType();
-
     MockVariableInstanceBuilder builder = MockProvider.mockVariableInstance();
     VariableInstance variableInstanceMock =
         builder
-          .typeName(type.getTypeName())
-          .valueTypeName("byte[]")
-          .typedValue(null)
-          .serializedValue(null)
+          .typedValue(Variables.byteArrayValue(null))
           .build();
 
     when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);
@@ -144,19 +144,11 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
 
   @Test
   public void testBinaryDataForBinaryVariable() {
-    final ByteArrayType type = new ByteArrayType();
     final byte[] byteContent = "some bytes".getBytes();
-
-    MockSerializedValueBuilder serializedValueBuilder =
-        new MockSerializedValueBuilder()
-          .typedValue(byteContent);
 
     VariableInstance variableInstanceMock =
         MockProvider.mockVariableInstance()
-          .valueTypeName(type.getTypeNameForValue(null))
-          .typeName(type.getTypeName())
-          .typedValue(byteContent)
-          .serializedValue(serializedValueBuilder)
+          .typedValue(Variables.byteArrayValue(byteContent))
           .build();
 
     when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);
@@ -178,20 +170,13 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
 
   @Test
   public void testBinaryDataForSerializableVariable() {
-    final SerializableType type = new SerializableType();
     String value = "some bytes";
     final byte[] serializedValue = value.getBytes();
 
-    MockSerializedValueBuilder serializedValueBuilder =
-        new MockSerializedValueBuilder()
-          .typedValue(serializedValue);
-
     VariableInstance variableInstanceMock =
         MockProvider.mockVariableInstance()
-          .valueTypeName(type.getTypeNameForValue(null))
-          .typeName(type.getTypeName())
-          .typedValue(value)
-          .serializedValue(serializedValueBuilder)
+          .typedValue(Variables.serializedObjectValue(serializedValue)
+              .serializationDataFormat(JavaObjectSerializer.SERIALIZATION_DATA_FORMAT).create())
           .build();
 
     when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);

@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.rest.dto.converter.BooleanConverter;
 import org.camunda.bpm.engine.rest.dto.converter.VariableListConverter;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.runtime.ExecutionQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class ExecutionQueryDto extends AbstractQueryDto<ExecutionQuery> {
 
@@ -62,8 +63,8 @@ public class ExecutionQueryDto extends AbstractQueryDto<ExecutionQuery> {
 
   }
 
-  public ExecutionQueryDto(MultivaluedMap<String, String> queryParameters) {
-    super(queryParameters);
+  public ExecutionQueryDto(ObjectMapper objectMapper, MultivaluedMap<String, String> queryParameters) {
+    super(objectMapper, queryParameters);
   }
 
   @CamundaQueryParam("processDefinitionKey")

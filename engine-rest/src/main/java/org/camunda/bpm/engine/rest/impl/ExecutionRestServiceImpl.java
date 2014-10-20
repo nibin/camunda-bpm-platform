@@ -15,9 +15,7 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ContextResolver;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.ExecutionRestService;
@@ -32,31 +30,23 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware implements ExecutionRestService {
 
-  @Context
-  protected ContextResolver<ObjectMapper> objectMapperResolver;
-
   public ExecutionRestServiceImpl() {
     super();
   }
 
-  public ExecutionRestServiceImpl(String engineName, final ObjectMapper objectMapper) {
-    super(engineName);
-    this.objectMapperResolver = new ContextResolver<ObjectMapper>() {
-      public ObjectMapper getContext(Class<?> type) {
-        return objectMapper;
-      }
-    };
+  public ExecutionRestServiceImpl(String engineName, ObjectMapper objectMapper) {
+    super(engineName, objectMapper);
   }
 
   @Override
   public ExecutionResource getExecution(String executionId) {
-    return new ExecutionResourceImpl(getProcessEngine(), executionId, objectMapperResolver.getContext(null));
+    return new ExecutionResourceImpl(getProcessEngine(), executionId, getObjectMapper());
   }
 
   @Override
   public List<ExecutionDto> getExecutions(UriInfo uriInfo, Integer firstResult,
       Integer maxResults) {
-    ExecutionQueryDto queryDto = new ExecutionQueryDto(uriInfo.getQueryParameters());
+    ExecutionQueryDto queryDto = new ExecutionQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryExecutions(queryDto, firstResult, maxResults);
   }
 
@@ -93,7 +83,7 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
 
   @Override
   public CountResultDto getExecutionsCount(UriInfo uriInfo) {
-    ExecutionQueryDto queryDto = new ExecutionQueryDto(uriInfo.getQueryParameters());
+    ExecutionQueryDto queryDto = new ExecutionQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryExecutionsCount(queryDto);
   }
 

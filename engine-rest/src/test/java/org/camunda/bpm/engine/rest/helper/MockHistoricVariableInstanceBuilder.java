@@ -15,7 +15,9 @@ package org.camunda.bpm.engine.rest.helper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.history.HistoricVariableInstance;
+import org.camunda.bpm.engine.variable.value.ObjectValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
@@ -73,6 +75,10 @@ public class MockHistoricVariableInstanceBuilder {
     return name;
   }
 
+  public TypedValue getTypedValue() {
+    return value;
+  }
+
   public Object getValue() {
     return value.getValue();
   }
@@ -96,7 +102,18 @@ public class MockHistoricVariableInstanceBuilder {
     when(mockVariable.getVariableName()).thenReturn(name);
     when(mockVariable.getTypeName()).thenReturn(value.getType().getName());
     when(mockVariable.getVariableTypeName()).thenReturn(value.getType().getName());
-    when(mockVariable.getValue()).thenReturn(value.getValue());
+
+    if (ObjectValue.class.isAssignableFrom(value.getClass())) {
+      ObjectValue objectValue = (ObjectValue) value;
+      if (objectValue.isDeserialized()) {
+        when(mockVariable.getValue()).thenReturn(value.getValue());
+      } else {
+        when(mockVariable.getValue()).thenThrow(new ProcessEngineException("cannot deserialize"));
+      }
+    } else {
+      when(mockVariable.getValue()).thenReturn(value.getValue());
+    }
+
     when(mockVariable.getTypedValue()).thenReturn(value);
     when(mockVariable.getProcessInstanceId()).thenReturn(processInstanceId);
     when(mockVariable.getErrorMessage()).thenReturn(errorMessage);

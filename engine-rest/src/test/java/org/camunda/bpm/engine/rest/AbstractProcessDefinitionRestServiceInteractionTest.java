@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -35,8 +36,6 @@ import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.delegate.SerializedVariableValue;
-import org.camunda.bpm.engine.delegate.SerializedVariableValueBuilder;
 import org.camunda.bpm.engine.form.StartFormData;
 import org.camunda.bpm.engine.impl.calendar.DateTimeUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
@@ -47,10 +46,12 @@ import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
 import org.camunda.bpm.engine.rest.sub.repository.impl.ProcessDefinitionResourceImpl;
 import org.camunda.bpm.engine.rest.util.VariablesBuilder;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.runtime.VariableInstance;
+import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.type.ValueType;
 import org.fest.assertions.Assertions;
 import org.junit.Assert;
 import org.junit.Before;
@@ -114,8 +115,8 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
     when(formServiceMock.submitStartForm(eq(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID),  Matchers.<Map<String, Object>>any())).thenReturn(mockInstance);
     when(formServiceMock.submitStartForm(eq(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID),  anyString(), Matchers.<Map<String, Object>>any())).thenReturn(mockInstance);
 
-    Map<String, VariableInstance> startFormVariablesMock = MockProvider.createMockFormVariables();
-    when(formServiceMock.getStartFormVariables(eq(EXAMPLE_PROCESS_DEFINITION_ID), Matchers.<Collection<String>>any())).thenReturn(startFormVariablesMock);
+    VariableMap startFormVariablesMock = MockProvider.createMockFormVariables();
+    when(formServiceMock.getStartFormVariables(eq(EXAMPLE_PROCESS_DEFINITION_ID), Matchers.<Collection<String>>any(), anyBoolean())).thenReturn(startFormVariablesMock);
 
     managementServiceMock = mock(ManagementService.class);
     when(processEngine.getManagementService()).thenReturn(managementServiceMock);
@@ -373,12 +374,10 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
   public void testSubmitStartFormWithSerializedVariableValue() {
 
     String jsonValue = "{}";
-    Map<String, Object> serializationConfig = new HashMap<String, Object>();
-    serializationConfig.put("someSerializationProp", "someSerializationVal");
 
     Map<String, Object> variables = VariablesBuilder.create()
         .variable("aVariable", "aStringValue")
-        .variableSerialized("aSerializedVariable", jsonValue, serializationConfig)
+        .variable("aSerializedVariable", ValueType.OBJECT.getName(), jsonValue, "aFormat", "aRootType")
         .getVariables();
 
     Map<String, Object> json = new HashMap<String, Object>();
@@ -395,17 +394,15 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
         .body("suspended", equalTo(MockProvider.EXAMPLE_PROCESS_INSTANCE_IS_SUSPENDED))
       .when().post(SUBMIT_FORM_URL);
 
-    SerializedVariableValue serializedVariableValue = SerializedVariableValueBuilder.create()
-      .typedValue(jsonValue)
-      .configValue("someSerializationProp", "someSerializationVal")
-      .done();
-
-
-    Map<String, Object> expectedVariables = new HashMap<String, Object>();
-    expectedVariables.put("aVariable", "aStringValue");
-    expectedVariables.put("aSerializedVariable", serializedVariableValue);
-
-    verify(formServiceMock).submitStartForm(eq(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID), argThat(new EqualsMap(expectedVariables)));
+    verify(formServiceMock).submitStartForm(eq(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID),
+        argThat(
+            new EqualsMap()
+              .matcher("aVariable", equalTo("aStringValue"))
+              .matcher("aSerializedVariable", EqualsObjectValue
+                                                .objectValueMatcher()
+                                                .serializedStringValue(jsonValue)
+                                                .serializationFormat("aFormat")
+                                                .objectTypeName("aRootType"))));
   }
 
   @Test
@@ -599,11 +596,11 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
         .statusCode(Status.OK.getStatusCode()).contentType(ContentType.JSON)
         .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".id", equalTo(MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID))
         .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".name", equalTo(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME))
-        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".type", equalTo(MockProvider.STRING_VARIABLE_INSTANCE_TYPE))
+        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".type", equalTo(MockProvider.EXAMPLE_PRIMITIVE_VARIABLE_VALUE.getType().getName()))
       .when().get(START_FORM_VARIABLES_URL)
       .body();
 
-    verify(formServiceMock, times(1)).getStartFormVariables(EXAMPLE_PROCESS_DEFINITION_ID, null);
+    verify(formServiceMock, times(1)).getStartFormVariables(EXAMPLE_PROCESS_DEFINITION_ID, null, false);
   }
 
   @Test
@@ -616,7 +613,7 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
       .statusCode(Status.OK.getStatusCode()).contentType(ContentType.JSON)
     .when().get(START_FORM_VARIABLES_URL);
 
-    verify(formServiceMock, times(1)).getStartFormVariables(EXAMPLE_PROCESS_DEFINITION_ID, Arrays.asList(new String[]{"a","b","c"}));
+    verify(formServiceMock, times(1)).getStartFormVariables(EXAMPLE_PROCESS_DEFINITION_ID, Arrays.asList(new String[]{"a","b","c"}), false);
   }
 
   @Test

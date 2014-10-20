@@ -36,12 +36,13 @@ import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
 import org.camunda.bpm.engine.repository.CaseDefinition;
 import org.camunda.bpm.engine.repository.CaseDefinitionQuery;
-import org.camunda.bpm.engine.rest.dto.runtime.VariableValueDto;
+import org.camunda.bpm.engine.rest.dto.VariableValueDto;
 import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
 import org.camunda.bpm.engine.runtime.CaseInstance;
 import org.camunda.bpm.engine.runtime.CaseInstanceBuilder;
+import org.camunda.bpm.engine.variable.Variables;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -283,8 +284,8 @@ public abstract class AbstractCaseDefinitionRestServiceInteractionTest extends A
 
   @Test
   public void testCreateCaseInstanceByCaseDefinitionIdWithVariables() {
-    VariableValueDto aVariable = new VariableValueDto("abc", null);
-    VariableValueDto anotherVariable = new VariableValueDto(999, null);
+    VariableValueDto aVariable = VariableValueDto.fromTypedValue(Variables.stringValue("abc"));
+    VariableValueDto anotherVariable = VariableValueDto.fromTypedValue(Variables.integerValue(900));
 
     Map<String, Object> variables = new HashMap<String, Object>();
     variables.put("aVariableName", aVariable);
@@ -317,8 +318,8 @@ public abstract class AbstractCaseDefinitionRestServiceInteractionTest extends A
 
   @Test
   public void testCreateCaseInstanceByCaseDefinitionKeyWithVariables() {
-    VariableValueDto aVariable = new VariableValueDto("abc", null);
-    VariableValueDto anotherVariable = new VariableValueDto(999, null);
+    VariableValueDto aVariable = VariableValueDto.fromTypedValue(Variables.untypedValue("abc"));
+    VariableValueDto anotherVariable = VariableValueDto.fromTypedValue(Variables.untypedValue(900));
 
     Map<String, Object> variables = new HashMap<String, Object>();
     variables.put("aVariableName", aVariable);
@@ -350,8 +351,8 @@ public abstract class AbstractCaseDefinitionRestServiceInteractionTest extends A
 
   @Test
   public void testCreateCaseInstanceByCaseDefinitionIdWithBusinessKeyAndVariables() {
-    VariableValueDto aVariable = new VariableValueDto("abc", null);
-    VariableValueDto anotherVariable = new VariableValueDto(999, null);
+    VariableValueDto aVariable = VariableValueDto.fromTypedValue(Variables.untypedValue("abc"));
+    VariableValueDto anotherVariable = VariableValueDto.fromTypedValue(Variables.untypedValue(900));
 
     Map<String, Object> variables = new HashMap<String, Object>();
     variables.put("aVariableName", aVariable);
@@ -385,8 +386,8 @@ public abstract class AbstractCaseDefinitionRestServiceInteractionTest extends A
 
   @Test
   public void testCreateCaseInstanceByCaseDefinitionKeyWithBusinessKeyAndVariables() {
-    VariableValueDto aVariable = new VariableValueDto("abc", null);
-    VariableValueDto anotherVariable = new VariableValueDto(999, null);
+    VariableValueDto aVariable = VariableValueDto.fromTypedValue(Variables.untypedValue("abc"));
+    VariableValueDto anotherVariable = VariableValueDto.fromTypedValue(Variables.untypedValue(900));
 
     Map<String, Object> variables = new HashMap<String, Object>();
     variables.put("aVariableName", aVariable);

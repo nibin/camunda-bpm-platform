@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
 
@@ -37,6 +38,7 @@ import org.camunda.bpm.engine.rest.dto.converter.VariableListConverter;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.task.DelegationState;
 import org.camunda.bpm.engine.task.TaskQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -147,8 +149,8 @@ public class TaskQueryDto extends AbstractQueryDto<TaskQuery> {
 
   }
 
-  public TaskQueryDto(MultivaluedMap<String, String> queryParameters) {
-    super(queryParameters);
+  public TaskQueryDto(ObjectMapper objectMapper, MultivaluedMap<String, String> queryParameters) {
+    super(objectMapper, queryParameters);
   }
 
   @CamundaQueryParam("processInstanceBusinessKey")
@@ -1121,7 +1123,7 @@ public class TaskQueryDto extends AbstractQueryDto<TaskQuery> {
 
     dto.taskVariables = new ArrayList<VariableQueryParameterDto>();
     for (TaskQueryVariableValue variableValue : taskQuery.getVariables()) {
-      VariableQueryParameterDto variableValueDto = new VariableQueryParameterDto(variableValue);
+      VariableQueryParameterDto variableValueDto = new VariableQueryParameterDto(variableValue, null);
 
       if (variableValue.isProcessInstanceVariable()) {
         dto.processVariables.add(variableValueDto);

@@ -69,7 +69,6 @@ import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.delegate.ProcessEngineVariableType;
 import org.camunda.bpm.engine.form.TaskFormData;
 import org.camunda.bpm.engine.history.HistoricTaskInstance;
 import org.camunda.bpm.engine.history.HistoricTaskInstanceQuery;
@@ -87,8 +86,8 @@ import org.camunda.bpm.engine.rest.hal.Hal;
 import org.camunda.bpm.engine.rest.helper.EqualsList;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
 import org.camunda.bpm.engine.rest.util.VariablesBuilder;
-import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.task.Attachment;
 import org.camunda.bpm.engine.task.Comment;
 import org.camunda.bpm.engine.task.DelegationState;
@@ -96,6 +95,8 @@ import org.camunda.bpm.engine.task.IdentityLink;
 import org.camunda.bpm.engine.task.IdentityLinkType;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
+import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.type.ValueType;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.fest.assertions.Assertions;
@@ -207,8 +208,8 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
     TaskFormData mockFormData = MockProvider.createMockTaskFormData();
     when(formServiceMock.getTaskFormData(anyString())).thenReturn(mockFormData);
 
-    Map<String, VariableInstance> variablesMock = MockProvider.createMockFormVariables();
-    when(formServiceMock.getTaskFormVariables(eq(EXAMPLE_TASK_ID), Matchers.<Collection<String>>any())).thenReturn(variablesMock);
+    VariableMap variablesMock = MockProvider.createMockFormVariables();
+    when(formServiceMock.getTaskFormVariables(eq(EXAMPLE_TASK_ID), Matchers.<Collection<String>>any(), false)).thenReturn(variablesMock);
 
     repositoryServiceMock = mock(RepositoryService.class);
     when(processEngine.getRepositoryService()).thenReturn(repositoryServiceMock);
@@ -652,11 +653,11 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
         .statusCode(Status.OK.getStatusCode()).contentType(ContentType.JSON)
         .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".id", equalTo(MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID))
         .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".name", equalTo(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME))
-        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".type", equalTo(MockProvider.STRING_VARIABLE_INSTANCE_TYPE))
+        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".type", equalTo(MockProvider.EXAMPLE_PRIMITIVE_VARIABLE_VALUE.getType().getName()))
       .when().get(FORM_VARIABLES_URL)
       .body();
 
-    verify(formServiceMock, times(1)).getTaskFormVariables(EXAMPLE_TASK_ID, null);
+    verify(formServiceMock, times(1)).getTaskFormVariables(EXAMPLE_TASK_ID, null, false);
   }
 
   @Test
@@ -670,7 +671,7 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
         .statusCode(Status.OK.getStatusCode()).contentType(ContentType.JSON)
       .when().get(FORM_VARIABLES_URL);
 
-    verify(formServiceMock, times(1)).getTaskFormVariables(EXAMPLE_TASK_ID, Arrays.asList(new String[]{"a","b","c"}));
+    verify(formServiceMock, times(1)).getTaskFormVariables(EXAMPLE_TASK_ID, Arrays.asList(new String[]{"a","b","c"}), false);
   }
 
   @Test
@@ -2564,32 +2565,29 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
   @Test
   public void testPostSingleLocalVariableFromSerializedMultipart() throws Exception {
     byte[] bytes = "someContent".getBytes();
+    String typeName = "someJavaTypeName";
 
     String variableKey = "aVariableKey";
 
     given()
       .pathParam("id", MockProvider.EXAMPLE_TASK_ID).pathParam("varId", variableKey)
       .multiPart("data", "unspecified", bytes)
-      .multiPart("variableType", ProcessEngineVariableType.SERIALIZABLE.getName(), MediaType.TEXT_PLAIN)
+      .multiPart("type", typeName, MediaType.TEXT_PLAIN)
     .expect()
       .statusCode(Status.NO_CONTENT.getStatusCode())
     .when()
       .post(SINGLE_TASK_PUT_SINGLE_BINARY_VARIABLE_URL);
 
-    verify(taskServiceMock).setVariableLocalFromSerialized(
+    verify(taskServiceMock).setVariableLocal(
         eq(MockProvider.EXAMPLE_TASK_ID), eq(variableKey),
-        eq(bytes), eq(ProcessEngineVariableType.SERIALIZABLE.getName()), isNull(Map.class));
+        EqualsObjectValue.objectValueMatcher().serializedValue(bytes).objectTypeName(typeName));
   }
 
   @Test
   public void testPutSingleLocalVariableFromSerialized() throws Exception {
     String serializedValue = "{\"prop\" : \"value\"}";
-    Map<String, Object> config = new HashMap<String, Object>();
-    config.put(ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID, "aDataFormat");
-    config.put(ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE, "aRootType");
-
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(serializedValue, ProcessEngineVariableType.SPIN.getName(), config);
+        .getObjectValueMap(serializedValue, ValueType.OBJECT.getName(), "aDataFormat", "aRootType");
 
     String variableKey = "aVariableKey";
 
@@ -2602,9 +2600,12 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
     .when()
       .put(SINGLE_TASK_PUT_SINGLE_VARIABLE_URL);
 
-    verify(taskServiceMock).setVariableLocalFromSerialized(
+    verify(taskServiceMock).setVariableLocal(
         eq(MockProvider.EXAMPLE_TASK_ID), eq(variableKey),
-        eq(serializedValue), eq(ProcessEngineVariableType.SPIN.getName()), argThat(new EqualsMap(config)));
+        EqualsObjectValue.objectValueMatcher()
+          .serializedStringValue(serializedValue)
+          .serializationFormat("aDataFormat")
+          .objectTypeName("aRootType"));
   }
 
   @Test
@@ -2612,13 +2613,13 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
     String serializedValue = "{\"prop\" : \"value\"}";
 
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(serializedValue, "aNonExistingType", null);
+        .getObjectValueMap(serializedValue, "aNonExistingType", null, null);
 
     String variableKey = "aVariableKey";
 
     doThrow(new BadUserRequestException("expected exception"))
       .when(taskServiceMock)
-      .setVariableLocalFromSerialized(anyString(), anyString(), any(), anyString(), any(Map.class));
+      .setVariableLocal(anyString(), anyString(), any());
 
     given()
       .pathParam("id", MockProvider.EXAMPLE_TASK_ID).pathParam("varId", variableKey)
@@ -2636,18 +2637,17 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
   public void testPutSingleLocalVariableFromSerializedWithNoValue() {
     String variableKey = "aVariableKey";
 
-    Map<String, Object> config = new HashMap<String, Object>();
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(null, ProcessEngineVariableType.SPIN.getName(), config);
+        .getObjectValueMap(null, ValueType.OBJECT.getName(), null, null);
 
     given().pathParam("id", MockProvider.EXAMPLE_TASK_ID).pathParam("varId", variableKey)
       .contentType(ContentType.JSON).body(requestJson)
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().put(SINGLE_TASK_PUT_SINGLE_VARIABLE_URL);
 
-    verify(taskServiceMock).setVariableLocalFromSerialized(
+    verify(taskServiceMock).setVariableLocal(
         eq(MockProvider.EXAMPLE_TASK_ID), eq(variableKey),
-        isNull(), eq(ProcessEngineVariableType.SPIN.getName()), argThat(new EqualsMap(config)));
+        EqualsObjectValue.objectValueMatcher());
   }
 
   @Test

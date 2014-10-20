@@ -94,11 +94,11 @@ public class AuthorizationRestServiceImpl extends AbstractAuthorizedRestResource
   }
 
   public AuthorizationResource getAuthorization(String id) {
-    return new AuthorizationResourceImpl(getProcessEngine().getName(), id, relativeRootResourcePath);
+    return new AuthorizationResourceImpl(getProcessEngine().getName(), id, relativeRootResourcePath, getObjectMapper());
   }
 
   public List<AuthorizationDto> queryAuthorizations(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    AuthorizationQueryDto queryDto = new AuthorizationQueryDto(uriInfo.getQueryParameters());
+    AuthorizationQueryDto queryDto = new AuthorizationQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryAuthorizations(queryDto, firstResult, maxResults);
   }
 
@@ -142,7 +142,7 @@ public class AuthorizationRestServiceImpl extends AbstractAuthorizedRestResource
   }
 
   public CountResultDto getAuthorizationCount(UriInfo uriInfo) {
-    AuthorizationQueryDto queryDto = new AuthorizationQueryDto(uriInfo.getQueryParameters());
+    AuthorizationQueryDto queryDto = new AuthorizationQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return getAuthorizationCount(queryDto);
   }
 

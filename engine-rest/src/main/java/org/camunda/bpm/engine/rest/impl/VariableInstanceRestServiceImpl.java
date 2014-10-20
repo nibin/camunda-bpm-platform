@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.rest.sub.runtime.VariableInstanceResource;
 import org.camunda.bpm.engine.rest.sub.runtime.impl.VariableInstanceResourceImpl;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAware implements VariableInstanceRestService {
 
@@ -33,8 +34,8 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
     super();
   }
 
-  public VariableInstanceRestServiceImpl(String engineName) {
-    super(engineName);
+  public VariableInstanceRestServiceImpl(String engineName, ObjectMapper objectMapper) {
+    super(engineName, objectMapper);
   }
 
   @Override
@@ -44,7 +45,7 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
 
   @Override
   public List<VariableInstanceDto> getVariableInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults, boolean deserializeObjectValues) {
-    VariableInstanceQueryDto queryDto = new VariableInstanceQueryDto(uriInfo.getQueryParameters());
+    VariableInstanceQueryDto queryDto = new VariableInstanceQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryVariableInstances(queryDto, firstResult, maxResults, deserializeObjectValues);
   }
 
@@ -88,7 +89,7 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
 
   @Override
   public CountResultDto getVariableInstancesCount(UriInfo uriInfo) {
-    VariableInstanceQueryDto queryDto = new VariableInstanceQueryDto(uriInfo.getQueryParameters());
+    VariableInstanceQueryDto queryDto = new VariableInstanceQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryVariableInstancesCount(queryDto);
   }
 

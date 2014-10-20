@@ -15,9 +15,7 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ContextResolver;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.TaskService;
@@ -34,31 +32,23 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implements TaskRestService {
 
-  @Context
-  protected ContextResolver<ObjectMapper> objectMapperResolver;
-
   public TaskRestServiceImpl() {
     super();
   }
 
   public TaskRestServiceImpl(String engineName, final ObjectMapper objectMapper) {
-    super(engineName);
-    this.objectMapperResolver = new ContextResolver<ObjectMapper>() {
-      public ObjectMapper getContext(Class<?> type) {
-        return objectMapper;
-      }
-    };
+    super(engineName, objectMapper);
   }
 
   @Override
   public List<TaskDto> getTasks(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    TaskQueryDto queryDto = new TaskQueryDto(uriInfo.getQueryParameters());
+    TaskQueryDto queryDto = new TaskQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryTasks(queryDto, firstResult, maxResults);
   }
 
   @Override
   public HalTaskList getHalTasks(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    TaskQueryDto queryDto = new TaskQueryDto(uriInfo.getQueryParameters());
+    TaskQueryDto queryDto = new TaskQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
 
     ProcessEngine engine = getProcessEngine();
     TaskQuery query = queryDto.toQuery(engine);
@@ -115,7 +105,7 @@ public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implemen
 
   @Override
   public CountResultDto getTasksCount(UriInfo uriInfo) {
-    TaskQueryDto queryDto = new TaskQueryDto(uriInfo.getQueryParameters());
+    TaskQueryDto queryDto = new TaskQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryTasksCount(queryDto);
   }
 
@@ -133,7 +123,7 @@ public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implemen
 
   @Override
   public TaskResource getTask(String id) {
-    return new TaskResourceImpl(getProcessEngine(), id, relativeRootResourcePath, objectMapperResolver.getContext(null));
+    return new TaskResourceImpl(getProcessEngine(), id, relativeRootResourcePath, getObjectMapper());
   }
 
   public void createTask(TaskDto taskDto) {

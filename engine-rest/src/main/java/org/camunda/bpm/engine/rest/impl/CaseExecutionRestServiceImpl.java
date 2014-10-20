@@ -31,7 +31,7 @@ public class CaseExecutionRestServiceImpl extends AbstractRestProcessEngineAware
   }
 
   public List<CaseExecutionDto> getCaseExecutions(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    CaseExecutionQueryDto queryDto = new CaseExecutionQueryDto(uriInfo.getQueryParameters());
+    CaseExecutionQueryDto queryDto = new CaseExecutionQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryCaseExecutions(queryDto, firstResult, maxResults);
   }
 
@@ -65,7 +65,7 @@ public class CaseExecutionRestServiceImpl extends AbstractRestProcessEngineAware
   }
 
   public CountResultDto getCaseExecutionsCount(UriInfo uriInfo) {
-    CaseExecutionQueryDto queryDto = new CaseExecutionQueryDto(uriInfo.getQueryParameters());
+    CaseExecutionQueryDto queryDto = new CaseExecutionQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryCaseExecutionsCount(queryDto);
   }
 

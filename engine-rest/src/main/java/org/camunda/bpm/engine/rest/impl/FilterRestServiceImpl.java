@@ -56,8 +56,8 @@ public class FilterRestServiceImpl extends AbstractAuthorizedRestResource implem
     super(FILTER, ANY);
   }
 
-  public FilterRestServiceImpl(String engineName) {
-    super(engineName, FILTER, ANY);
+  public FilterRestServiceImpl(String engineName, ObjectMapper objectMapper) {
+    super(engineName, FILTER, ANY, objectMapper);
   }
 
   public FilterResource getFilter(Providers providers, String filterId) {
@@ -130,7 +130,7 @@ public class FilterRestServiceImpl extends AbstractAuthorizedRestResource implem
 
   protected FilterQuery getQueryFromQueryParameters(MultivaluedMap<String, String> queryParameters) {
     ProcessEngine engine = getProcessEngine();
-    FilterQueryDto queryDto = new FilterQueryDto(queryParameters);
+    FilterQueryDto queryDto = new FilterQueryDto(getObjectMapper(), queryParameters);
     return queryDto.toQuery(engine);
   }
 

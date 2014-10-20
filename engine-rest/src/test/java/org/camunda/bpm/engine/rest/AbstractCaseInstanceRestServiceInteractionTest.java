@@ -50,6 +50,8 @@ import org.camunda.bpm.engine.rest.util.VariablesBuilder;
 import org.camunda.bpm.engine.runtime.CaseExecutionCommandBuilder;
 import org.camunda.bpm.engine.runtime.CaseInstance;
 import org.camunda.bpm.engine.runtime.CaseInstanceQuery;
+import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.Variables;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.junit.Assert;
@@ -77,13 +79,13 @@ public class AbstractCaseInstanceRestServiceInteractionTest extends AbstractRest
   protected static final String SINGLE_CASE_INSTANCE_VARIABLE_URL = CASE_INSTANCE_VARIABLES_URL + "/{varId}";
   protected static final String SINGLE_CASE_INSTANCE_BINARY_VARIABLE_URL = SINGLE_CASE_INSTANCE_VARIABLE_URL + "/data";
 
-  protected static final Map<String, Object> EXAMPLE_OBJECT_VARIABLES = new HashMap<String, Object>();
+  protected static final VariableMap EXAMPLE_OBJECT_VARIABLES = Variables.createVariables();
   static {
     ExampleVariableObject variableValue = new ExampleVariableObject();
     variableValue.setProperty1("aPropertyValue");
     variableValue.setProperty2(true);
 
-    EXAMPLE_OBJECT_VARIABLES.put(EXAMPLE_VARIABLE_KEY, variableValue);
+    EXAMPLE_OBJECT_VARIABLES.putValueTyped(EXAMPLE_VARIABLE_KEY, Variables.objectValue(variableValue).serializationDataFormat("application/json").create());
   }
 
   private CaseService caseServiceMock;

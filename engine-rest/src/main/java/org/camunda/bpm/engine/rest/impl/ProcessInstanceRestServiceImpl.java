@@ -15,9 +15,8 @@ package org.camunda.bpm.engine.rest.impl;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.ProcessInstanceRestService;
@@ -35,23 +34,19 @@ import org.codehaus.jackson.map.ObjectMapper;
 public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAware implements
     ProcessInstanceRestService {
 
-  @Context
-  protected ObjectMapper objectMapper;
-
   public ProcessInstanceRestServiceImpl() {
     super();
   }
 
   public ProcessInstanceRestServiceImpl(String engineName, ObjectMapper objectMapper) {
-    super(engineName);
-    this.objectMapper = objectMapper;
+    super(engineName, objectMapper);
   }
 
 
   @Override
   public List<ProcessInstanceDto> getProcessInstances(
       UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    ProcessInstanceQueryDto queryDto = new ProcessInstanceQueryDto(uriInfo.getQueryParameters());
+    ProcessInstanceQueryDto queryDto = new ProcessInstanceQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryProcessInstances(queryDto, firstResult, maxResults);
   }
 
@@ -88,7 +83,7 @@ public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAwa
 
   @Override
   public CountResultDto getProcessInstancesCount(UriInfo uriInfo) {
-    ProcessInstanceQueryDto queryDto = new ProcessInstanceQueryDto(uriInfo.getQueryParameters());
+    ProcessInstanceQueryDto queryDto = new ProcessInstanceQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryProcessInstancesCount(queryDto);
   }
 
@@ -106,7 +101,7 @@ public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAwa
 
   @Override
   public ProcessInstanceResource getProcessInstance(String processInstanceId) {
-    return new ProcessInstanceResourceImpl(getProcessEngine(), processInstanceId, objectMapper);
+    return new ProcessInstanceResourceImpl(getProcessEngine(), processInstanceId, getObjectMapper());
   }
 
   public void updateSuspensionState(ProcessInstanceSuspensionStateDto dto) {

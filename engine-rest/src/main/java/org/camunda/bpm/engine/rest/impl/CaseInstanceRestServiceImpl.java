@@ -47,7 +47,7 @@ public class CaseInstanceRestServiceImpl extends AbstractRestProcessEngineAware 
   }
 
   public List<CaseInstanceDto> getCaseInstances(UriInfo uriInfo, Integer firstResult, Integer maxResults) {
-    CaseInstanceQueryDto queryDto = new CaseInstanceQueryDto(uriInfo.getQueryParameters());
+    CaseInstanceQueryDto queryDto = new CaseInstanceQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryCaseInstances(queryDto, firstResult, maxResults);
   }
 
@@ -81,7 +81,7 @@ public class CaseInstanceRestServiceImpl extends AbstractRestProcessEngineAware 
   }
 
   public CountResultDto getCaseInstancesCount(UriInfo uriInfo) {
-    CaseInstanceQueryDto queryDto = new CaseInstanceQueryDto(uriInfo.getQueryParameters());
+    CaseInstanceQueryDto queryDto = new CaseInstanceQueryDto(getObjectMapper(), uriInfo.getQueryParameters());
     return queryCaseInstancesCount(queryDto);
   }
 

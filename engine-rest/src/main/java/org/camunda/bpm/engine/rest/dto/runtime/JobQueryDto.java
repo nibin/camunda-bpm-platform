@@ -28,6 +28,7 @@ import org.camunda.bpm.engine.rest.dto.converter.ConditionListConverter;
 import org.camunda.bpm.engine.rest.dto.converter.DateConverter;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.runtime.JobQuery;
+import org.codehaus.jackson.map.ObjectMapper;
 
 public class JobQueryDto extends AbstractQueryDto<JobQuery> {
 
@@ -70,8 +71,8 @@ public class JobQueryDto extends AbstractQueryDto<JobQuery> {
 
   public JobQueryDto() {}
 
-	public JobQueryDto(MultivaluedMap<String, String> queryParameters) {
-		super(queryParameters);
+	public JobQueryDto(ObjectMapper objectMapper, MultivaluedMap<String, String> queryParameters) {
+		super(objectMapper, queryParameters);
 	}
 
 	@CamundaQueryParam("jobId")

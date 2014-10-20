@@ -81,7 +81,9 @@ import org.camunda.bpm.engine.task.DelegationState;
 import org.camunda.bpm.engine.task.IdentityLink;
 import org.camunda.bpm.engine.task.IdentityLinkType;
 import org.camunda.bpm.engine.task.Task;
+import org.camunda.bpm.engine.variable.VariableMap;
 import org.camunda.bpm.engine.variable.Variables;
+import org.camunda.bpm.engine.variable.value.StringValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
@@ -164,7 +166,7 @@ public abstract class MockProvider {
 
   public static final String EXAMPLE_VARIABLE_INSTANCE_NAME = "aVariableInstanceName";
 
-  public static final TypedValue EXAMPLE_VARIABLE_INSTANCE_VALUE = Variables.stringValue("aVariableInstanceValue");
+  public static final StringValue EXAMPLE_PRIMITIVE_VARIABLE_VALUE = Variables.stringValue("aVariableInstanceValue");
   public static final String EXAMPLE_VARIABLE_INSTANCE_PROC_INST_ID = "aVariableInstanceProcInstId";
   public static final String EXAMPLE_VARIABLE_INSTANCE_EXECUTION_ID = "aVariableInstanceExecutionId";
   public static final String EXAMPLE_VARIABLE_INSTANCE_CASE_INST_ID = "aVariableInstanceCaseInstId";
@@ -631,7 +633,7 @@ public abstract class MockProvider {
     return new MockVariableInstanceBuilder()
       .id(EXAMPLE_VARIABLE_INSTANCE_ID)
       .name(EXAMPLE_VARIABLE_INSTANCE_NAME)
-      .typedValue(EXAMPLE_VARIABLE_INSTANCE_VALUE)
+      .typedValue(EXAMPLE_PRIMITIVE_VARIABLE_VALUE)
       .processInstanceId(EXAMPLE_VARIABLE_INSTANCE_PROC_INST_ID)
       .executionId(EXAMPLE_VARIABLE_INSTANCE_EXECUTION_ID)
       .caseInstanceId(EXAMPLE_VARIABLE_INSTANCE_CASE_INST_ID)
@@ -639,6 +641,10 @@ public abstract class MockProvider {
       .taskId(EXAMPLE_VARIABLE_INSTANCE_TASK_ID)
       .activityInstanceId(EXAMPLE_VARIABLE_INSTANCE_ACTIVITY_INSTANCE_ID)
       .errorMessage(null);
+  }
+
+  public static VariableInstance createMockVariableInstance(TypedValue value) {
+    return mockVariableInstance().typedValue(value).build();
   }
 
   public static Execution createMockExecution() {
@@ -1078,7 +1084,7 @@ public abstract class MockProvider {
     return new MockHistoricVariableInstanceBuilder()
         .id(EXAMPLE_VARIABLE_INSTANCE_ID)
         .name(EXAMPLE_VARIABLE_INSTANCE_NAME)
-        .typedValue(EXAMPLE_VARIABLE_INSTANCE_VALUE)
+        .typedValue(EXAMPLE_PRIMITIVE_VARIABLE_VALUE)
         .processInstanceId(EXAMPLE_VARIABLE_INSTANCE_PROC_INST_ID)
         .activityInstanceId(EXAMPLE_VARIABLE_INSTANCE_ACTIVITY_INSTANCE_ID)
         .errorMessage(null);
@@ -1199,7 +1205,7 @@ public abstract class MockProvider {
         .taskId(EXAMPLE_HISTORIC_VAR_UPDATE_TASK_ID)
         .time(EXAMPLE_HISTORIC_VAR_UPDATE_TIME)
         .name(EXAMPLE_HISTORIC_VAR_UPDATE_NAME)
-        .typedValue(EXAMPLE_VARIABLE_INSTANCE_VALUE)
+        .typedValue(EXAMPLE_PRIMITIVE_VARIABLE_VALUE)
         .revision(EXAMPLE_HISTORIC_VAR_UPDATE_REVISION)
         .errorMessage(null);
   }
@@ -1388,8 +1394,8 @@ public abstract class MockProvider {
     return mock;
   }
 
-  public static Map<String, VariableInstance> createMockFormVariables() {
-    Map<String, VariableInstance> mock = new HashMap<String, VariableInstance>();
+  public static VariableMap createMockFormVariables() {
+    VariableMap mock = Variables.createVariables();
     VariableInstance variableInstanceMock = createMockVariableInstance();
     mock.put(variableInstanceMock.getName(), variableInstanceMock);
     return mock;

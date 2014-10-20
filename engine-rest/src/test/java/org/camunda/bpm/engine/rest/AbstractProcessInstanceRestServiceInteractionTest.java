@@ -21,19 +21,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.response.Response;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
+
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.delegate.ProcessEngineVariableType;
 import org.camunda.bpm.engine.impl.RuntimeServiceImpl;
 import org.camunda.bpm.engine.rest.dto.runtime.ProcessInstanceSuspensionStateDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
@@ -42,14 +41,21 @@ import org.camunda.bpm.engine.rest.helper.EqualsList;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
 import org.camunda.bpm.engine.rest.helper.ExampleVariableObject;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
 import org.camunda.bpm.engine.rest.util.VariablesBuilder;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
+import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.Variables;
+import org.camunda.bpm.engine.variable.type.ValueType;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.type.TypeFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.Response;
 
 public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
     AbstractRestServiceTest {
@@ -64,13 +70,13 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
   protected static final String SINGLE_PROCESS_INSTANCE_SUSPENDED_URL = SINGLE_PROCESS_INSTANCE_URL + "/suspended";
   protected static final String PROCESS_INSTANCE_SUSPENDED_URL = PROCESS_INSTANCE_URL + "/suspended";
 
-  protected static final Map<String, Object> EXAMPLE_OBJECT_VARIABLES = new HashMap<String, Object>();
+  protected static final VariableMap EXAMPLE_OBJECT_VARIABLES = Variables.createVariables();
   static {
     ExampleVariableObject variableValue = new ExampleVariableObject();
     variableValue.setProperty1("aPropertyValue");
     variableValue.setProperty2(true);
 
-    EXAMPLE_OBJECT_VARIABLES.put(EXAMPLE_VARIABLE_KEY, variableValue);
+    EXAMPLE_OBJECT_VARIABLES.putValueTyped(EXAMPLE_VARIABLE_KEY, Variables.objectValue(variableValue).create());
   }
 
   private RuntimeServiceImpl runtimeServiceMock;
@@ -789,26 +795,21 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
     given()
       .pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).pathParam("varId", variableKey)
       .multiPart("data", "unspecified", bytes)
-      .multiPart("variableType", ProcessEngineVariableType.SERIALIZABLE.getName(), MediaType.TEXT_PLAIN)
     .expect()
       .statusCode(Status.NO_CONTENT.getStatusCode())
     .when()
       .post(SINGLE_PROCESS_INSTANCE_BINARY_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableFromSerialized(
+    verify(runtimeServiceMock).setVariableLocal(
         eq(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID), eq(variableKey),
-        eq(bytes), eq(ProcessEngineVariableType.SERIALIZABLE.getName()), isNull(Map.class));
+        EqualsObjectValue.objectValueMatcher().serializedValue(bytes));
   }
 
   @Test
   public void testPutSingleVariableFromSerialized() throws Exception {
     String serializedValue = "{\"prop\" : \"value\"}";
-    Map<String, Object> config = new HashMap<String, Object>();
-    config.put(ProcessEngineVariableType.SPIN_TYPE_DATA_FORMAT_ID, "aDataFormat");
-    config.put(ProcessEngineVariableType.SPIN_TYPE_CONFIG_ROOT_TYPE, "aRootType");
-
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(serializedValue, ProcessEngineVariableType.SPIN.getName(), config);
+        .getObjectValueMap(serializedValue, ValueType.OBJECT.getName(), "aDataFormat", "aRootType");
 
     String variableKey = "aVariableKey";
 
@@ -821,9 +822,12 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
     .when()
       .put(SINGLE_PROCESS_INSTANCE_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableFromSerialized(
+    verify(runtimeServiceMock).setVariableLocal(
         eq(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID), eq(variableKey),
-        eq(serializedValue), eq(ProcessEngineVariableType.SPIN.getName()), argThat(new EqualsMap(config)));
+        EqualsObjectValue.objectValueMatcher()
+          .serializedStringValue(serializedValue)
+          .serializationFormat("aDataFormat")
+          .objectTypeName("aRootType"));
   }
 
   @Test
@@ -831,13 +835,13 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
     String serializedValue = "{\"prop\" : \"value\"}";
 
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(serializedValue, "aNonExistingType", null);
+        .getObjectValueMap(serializedValue, "aNonExistingType", null, null);
 
     String variableKey = "aVariableKey";
 
     doThrow(new BadUserRequestException("expected exception"))
       .when(runtimeServiceMock)
-      .setVariableFromSerialized(anyString(), anyString(), any(), anyString(), any(Map.class));
+      .setVariableLocal(anyString(), anyString(), any());
 
     given()
       .pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).pathParam("varId", variableKey)
@@ -854,19 +858,17 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
   @Test
   public void testPutSingleVariableFromSerializedWithNoValue() {
     String variableKey = "aVariableKey";
-
-    Map<String, Object> config = new HashMap<String, Object>();
     Map<String, Object> requestJson = VariablesBuilder
-        .getSerializedValueMap(null, ProcessEngineVariableType.SPIN.getName(), config);
+        .getObjectValueMap(null, ValueType.OBJECT.getName(), null, null);
 
     given().pathParam("id", MockProvider.EXAMPLE_PROCESS_INSTANCE_ID).pathParam("varId", variableKey)
       .contentType(ContentType.JSON).body(requestJson)
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().put(SINGLE_PROCESS_INSTANCE_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableFromSerialized(
+    verify(runtimeServiceMock).setVariableLocal(
         eq(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID), eq(variableKey),
-        isNull(), eq(ProcessEngineVariableType.SPIN.getName()), argThat(new EqualsMap(config)));
+        EqualsObjectValue.objectValueMatcher());
   }
 
   @Test

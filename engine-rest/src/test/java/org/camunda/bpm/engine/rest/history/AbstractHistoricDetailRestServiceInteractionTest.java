@@ -26,12 +26,10 @@ import javax.ws.rs.core.Response.Status;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.history.HistoricDetailQuery;
 import org.camunda.bpm.engine.history.HistoricVariableUpdate;
-import org.camunda.bpm.engine.impl.variable.ByteArrayType;
-import org.camunda.bpm.engine.impl.variable.SerializableType;
 import org.camunda.bpm.engine.rest.AbstractRestServiceTest;
 import org.camunda.bpm.engine.rest.helper.MockHistoricVariableUpdateBuilder;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
-import org.camunda.bpm.engine.rest.helper.MockSerializedValueBuilder;
+import org.camunda.bpm.engine.variable.Variables;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,8 +77,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     .and()
       .body("id", equalTo(builder.getId()))
       .body("variableName", equalTo(builder.getName()))
-      .body("variableTypeName", equalTo(builder.getVariableTypeName()))
-      .body("typeName", equalTo(builder.getTypeName()))
+      .body("variableType", equalTo(builder.getTypedValue().getType().getName()))
       .body("value", equalTo(builder.getTypedValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
@@ -97,13 +94,9 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
   @Test
   public void testGetSingleVariableInstanceForBinaryVariable() {
-    final ByteArrayType type = new ByteArrayType();
-
     MockHistoricVariableUpdateBuilder builder = MockProvider.mockHistoricVariableUpdate();
 
     HistoricVariableUpdate detailMock = builder
-        .typeName(type.getTypeName())
-        .valueTypeName(type.getTypeNameForValue(null))
         .typedValue(null)
         .build();
 
@@ -117,8 +110,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     .and()
       .body("id", equalTo(builder.getId()))
       .body("variableName", equalTo(builder.getName()))
-      .body("variableTypeName", equalTo(builder.getVariableTypeName()))
-      .body("typeName", equalTo(builder.getTypeName()))
+      .body("variableType", equalTo(builder.getTypedValue().getType().getName()))
       .body("value", equalTo(builder.getTypedValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
@@ -154,20 +146,12 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
   @Test
   public void testBinaryDataForBinaryVariable() {
-    final ByteArrayType type = new ByteArrayType();
     final byte[] byteContent = "some bytes".getBytes();
-
-    MockSerializedValueBuilder serializedValueBuilder =
-        new MockSerializedValueBuilder()
-          .typedValue(byteContent);
 
     MockHistoricVariableUpdateBuilder builder = MockProvider.mockHistoricVariableUpdate();
 
     HistoricVariableUpdate detailMock = builder
-        .typeName(type.getTypeName())
-        .valueTypeName(type.getTypeNameForValue(null))
-        .typedValue(byteContent)
-        .serializedValue(serializedValueBuilder)
+        .typedValue(Variables.byteArrayValue(byteContent))
         .build();
 
     when(historicDetailQueryMock.detailId(detailMock.getId())).thenReturn(historicDetailQueryMock);
@@ -188,20 +172,12 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
   @Test
   public void testBinaryDataForSerializableVariable() {
-    final SerializableType type = new SerializableType();
     String value = "some bytes";
     final byte[] serializedValue = value.getBytes();
 
-    MockSerializedValueBuilder serializedValueBuilder =
-        new MockSerializedValueBuilder()
-          .typedValue(serializedValue);
-
     HistoricVariableUpdate detailMock =
         MockProvider.mockHistoricVariableUpdate()
-          .valueTypeName(type.getTypeNameForValue(null))
-          .typeName(type.getTypeName())
-          .typedValue(value)
-          .serializedValue(serializedValueBuilder)
+          .typedValue(Variables.serializedObjectValue(serializedValue).create())
           .build();
 
     when(historicDetailQueryMock.detailId(detailMock.getId())).thenReturn(historicDetailQueryMock);

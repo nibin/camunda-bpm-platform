@@ -20,14 +20,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.query.Query;
+import org.camunda.bpm.engine.rest.dto.converter.JacksonAwareStringToTypeConverter;
 import org.camunda.bpm.engine.rest.dto.converter.StringToTypeConverter;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.exception.RestException;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * Defines common query operations, such as sorting options and validation.
@@ -49,6 +52,8 @@ public abstract class AbstractQueryDto<T extends Query<?, ?>> {
     VALID_SORT_ORDER_VALUES.add(SORT_ORDER_DESC_VALUE);
   }
 
+  protected ObjectMapper objectMapper;
+
   protected String sortBy;
   protected String sortOrder;
 
@@ -59,7 +64,8 @@ public abstract class AbstractQueryDto<T extends Query<?, ?>> {
 
   }
 
-  public AbstractQueryDto(MultivaluedMap<String, String> queryParameters) {
+  public AbstractQueryDto(ObjectMapper objectMapper, MultivaluedMap<String, String> queryParameters) {
+    this.objectMapper = objectMapper;
     for (Entry<String, List<String>> param : queryParameters.entrySet()) {
       String key = param.getKey();
       String value = param.getValue().iterator().next();
@@ -98,14 +104,15 @@ public abstract class AbstractQueryDto<T extends Query<?, ?>> {
   protected void setValueBasedOnAnnotation(String key, String value) {
     List<Method> matchingMethods = findMatchingAnnotatedMethods(key);
     for (Method method : matchingMethods) {
-      Class<? extends StringToTypeConverter<?>> converterClass = findAnnotatedTypeConverter(method);
+      Class<? extends JacksonAwareStringToTypeConverter<?>> converterClass = findAnnotatedTypeConverter(method);
       if (converterClass == null) {
         continue;
       }
 
-      StringToTypeConverter<?> converter = null;
+      JacksonAwareStringToTypeConverter<?> converter = null;
       try {
         converter = converterClass.newInstance();
+        converter.setObjectMapper(objectMapper);
         Object convertedValue = converter.convertQueryParameterToType(value);
         method.invoke(this, convertedValue);
       } catch (InstantiationException e) {
@@ -140,7 +147,7 @@ public abstract class AbstractQueryDto<T extends Query<?, ?>> {
     return result;
   }
 
-  private Class<? extends StringToTypeConverter<?>> findAnnotatedTypeConverter(Method method) {
+  private Class<? extends JacksonAwareStringToTypeConverter<?>> findAnnotatedTypeConverter(Method method) {
     Annotation[] methodAnnotations = method.getAnnotations();
 
     for (int j = 0; j < methodAnnotations.length; j++) {
