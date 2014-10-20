@@ -33,6 +33,8 @@ import org.camunda.bpm.engine.variable.value.TypedValue;
  *
  * @author Roman Smirnov
  *
+ * @since 7.2
+ *
  */
 public interface CaseService {
 
@@ -171,6 +173,23 @@ public interface CaseService {
   VariableMap getVariables(String caseExecutionId, Collection<String> variableNames);
 
   /**
+   * <p>The variable values for all given variableNames, takes all variables
+   * into account which are visible from the given case execution scope
+   * (including parent scopes).</p>
+   *
+   * @param caseExecutionId the id of a case instance or case execution, cannot be null
+   * @param variableNames the collection of variable names that should be retrieved
+   * @param deserializeValues if false, {@link SerializableValue SerializableValues} will not be deserialized
+   *
+   * @return the variables or an empty map if no such variables are found
+   *
+   * @throws NotValidException when the given case execution id is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  VariableMap getVariables(String caseExecutionId, Collection<String> variableNames, boolean deserializeValues);
+
+  /**
    * <p>The variable values for the given variableNames only taking the given case
    * execution scope into account, not looking in outer scopes.</p>
    *
@@ -184,6 +203,22 @@ public interface CaseService {
    * @throws ProcessEngineException when an internal exception happens during the execution of the command
    */
   VariableMap getVariablesLocal(String caseExecutionId, Collection<String> variableNames);
+
+  /**
+   * <p>The variable values for the given variableNames only taking the given case
+   * execution scope into account, not looking in outer scopes.</p>
+   *
+   * @param caseExecutionId the id of a case execution, cannot be null
+   * @param variableNames the collection of variable names that should be retrieved
+   * @param deserializeValues if false, the process engine will not attempt to deserialize {@link SerializableValue SerializableValues}.
+   *
+   * @return the variables or an empty map if no such variables are found
+   *
+   * @throws NotValidException when the given case execution id is null
+   * @throws NotFoundException when no case execution is found for the given case execution id
+   * @throws ProcessEngineException when an internal exception happens during the execution of the command
+   */
+  VariableMap getVariablesLocal(String caseExecutionId, Collection<String> variableNames, boolean deserializeValues);
 
   /**
    * <p>Searching for the variable is done in all scopes that are visible

@@ -33,13 +33,13 @@ public class GetExecutionVariablesCmd implements Command<VariableMap>, Serializa
   protected String executionId;
   protected Collection<String> variableNames;
   protected boolean isLocal;
-  protected boolean deserializeObjectValues;
+  protected boolean deserializeValues;
 
-  public GetExecutionVariablesCmd(String executionId, Collection<String> variableNames, boolean isLocal, boolean deserializeObjectValues) {
+  public GetExecutionVariablesCmd(String executionId, Collection<String> variableNames, boolean isLocal, boolean deserializeValues) {
     this.executionId = executionId;
     this.variableNames = variableNames;
     this.isLocal = isLocal;
-    this.deserializeObjectValues = deserializeObjectValues;
+    this.deserializeValues = deserializeValues;
   }
 
   public VariableMap execute(CommandContext commandContext) {
@@ -54,7 +54,7 @@ public class GetExecutionVariablesCmd implements Command<VariableMap>, Serializa
     VariableMapImpl executionVariables = new VariableMapImpl();
 
     // collect variables from execution
-    execution.collectVariables(executionVariables, variableNames, isLocal, deserializeObjectValues);
+    execution.collectVariables(executionVariables, variableNames, isLocal, deserializeValues);
 
     return executionVariables;
   }

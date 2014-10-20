@@ -29,6 +29,7 @@ import org.camunda.bpm.engine.task.NativeTaskQuery;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
 import org.camunda.bpm.engine.variable.VariableMap;
+import org.camunda.bpm.engine.variable.value.SerializableValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /** Service which provides access to {@link Task} and form related operations.
@@ -339,19 +340,61 @@ public interface TaskService {
   /** get a variables and search in the task scope and if available also the execution scopes. */
   Object getVariable(String taskId, String variableName);
 
-  /** get a variables and search in the task scope and if available also the execution scopes. */
+  /** get a variables and search in the task scope and if available also the execution scopes.
+   *
+   * @param taskId the id of the task
+   * @param variableName the name of the variable to fetch
+   *
+   * @return the TypedValue for the variable or 'null' in case no such variable exists.
+   *
+   * @throws ClassCastException in case the value is not of the requested type
+   *
+   * @since 7.2
+   */
   <T extends TypedValue> T getVariableTyped(String taskId, String variableName);
 
-  /** get a variables and search in the task scope and if available also the execution scopes. */
+  /** get a variables and search in the task scope and if available also the execution scopes.
+   *
+   * @param taskId the id of the task
+   * @param variableName the name of the variable to fetch
+   * @param deserializeValue if false a, {@link SerializableValue} will not be deserialized.
+   *
+   * @return the TypedValue for the variable or 'null' in case no such variable exists.
+   *
+   * @throws ClassCastException in case the value is not of the requested type
+   *
+   * @since 7.2
+   */
   <T extends TypedValue> T getVariableTyped(String taskId, String variableName, boolean deserializeValue);
 
   /** get a variables and only search in the task scope.  */
   Object getVariableLocal(String taskId, String variableName);
 
-  /** get a variables and only search in the task scope.  */
+  /** get a variables and only search in the task scope.
+  *
+  * @param taskId the id of the task
+  * @param variableName the name of the variable to fetch
+  *
+  * @return the TypedValue for the variable or 'null' in case no such variable exists.
+  *
+  * @throws ClassCastException in case the value is not of the requested type
+  *
+  * @since 7.2
+  */
   <T extends TypedValue> T getVariableLocalTyped(String taskId, String variableName);
 
-  /** get a variables and only search in the task scope.  */
+  /** get a variables and only search in the task scope.
+   *
+   * @param taskId the id of the task
+   * @param variableName the name of the variable to fetch
+   * @param deserializeValue if false a, {@link SerializableValue} will not be deserialized.
+   *
+   * @return the TypedValue for the variable or 'null' in case no such variable exists.
+   *
+   * @throws ClassCastException in case the value is not of the requested type
+   *
+   * @since 7.2
+   */
   <T extends TypedValue> T getVariableLocalTyped(String taskId, String variableName, boolean deserializeValue);
 
   /** get all variables and search in the task scope and if available also the execution scopes.
@@ -361,7 +404,13 @@ public interface TaskService {
 
   /** get all variables and search in the task scope and if available also the execution scopes.
    * If you have many variables and you only need a few, consider using {@link #getVariables(String, Collection)}
-   * for better performance.*/
+   * for better performance.
+   *
+   * @param taskId the id of the task
+   * @param deserializeValues if false, {@link SerializableValue SerializableValues} will not be deserialized.
+   *
+   * @since 7.2
+   * */
   VariableMap getVariables(String taskId, boolean deserializeValues);
 
   /** get all variables and search only in the task scope.
@@ -371,14 +420,40 @@ public interface TaskService {
 
   /** get all variables and search only in the task scope.
   * If you have many task local variables and you only need a few, consider using {@link #getVariablesLocal(String, Collection)}
-  * for better performance.*/
+  * for better performance.
+  *
+  * @param taskId the id of the task
+  * @param deserializeValues if false, {@link SerializableValue SerializableValues} will not be deserialized.
+  *
+  * @since 7.2
+  * */
   VariableMap getVariablesLocal(String taskId, boolean deserializeValues);
 
-  /** get values for all given variableNames and search only in the task scope. */
+  /** get values for all given variableNames */
   VariableMap getVariables(String taskId, Collection<String> variableNames);
+
+  /** get values for all given variableName
+   *
+   * @param taskId the id of the task
+   * @param variableNames only fetch variables whose names are in the collection.
+   * @param deserializeValues if false, {@link SerializableValue SerializableValues} will not be deserialized.
+   *
+   * @since 7.2
+   * */
+  VariableMap getVariables(String taskId, Collection<String> variableNames, boolean deserializeValues);
 
   /** get a variable on a task */
   VariableMap getVariablesLocal(String taskId, Collection<String> variableNames);
+
+  /** get values for all given variableName. Only search in the local task scope.
+  *
+  * @param taskId the id of the task
+  * @param variableNames only fetch variables whose names are in the collection.
+  * @param deserializeValues if false, {@link SerializableValue SerializableValues} will not be deserialized.
+  *
+  * @since 7.2
+  * */
+  VariableMap getVariablesLocal(String taskId, Collection<String> variableNames, boolean deserializeValues);
 
   /**
    * Removes the variable from the task.

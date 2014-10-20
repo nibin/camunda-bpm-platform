@@ -10,55 +10,57 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.impl.cmd;
 
-import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+package org.camunda.bpm.engine.impl.cmd;
 
 import java.io.Serializable;
 
+import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.variable.value.TypedValue;
+
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+
 
 /**
  * @author Daniel Meyer
- *
  */
-public class GetExecutionVariableTypedCmd<T extends TypedValue> implements Command<T>, Serializable {
+public class GetTaskVariableCmdTyped implements Command<TypedValue>, Serializable {
 
   private static final long serialVersionUID = 1L;
-  protected String executionId;
+  protected String taskId;
   protected String variableName;
   protected boolean isLocal;
   protected boolean deserializeValue;
 
-  public GetExecutionVariableTypedCmd(String executionId, String variableName, boolean isLocal, boolean deserializeValue) {
-    this.executionId = executionId;
+  public GetTaskVariableCmdTyped(String taskId, String variableName, boolean isLocal, boolean deserializeValue) {
+    this.taskId = taskId;
     this.variableName = variableName;
     this.isLocal = isLocal;
     this.deserializeValue = deserializeValue;
   }
 
-  public T execute(CommandContext commandContext) {
-    ensureNotNull("executionId", executionId);
+  public TypedValue execute(CommandContext commandContext) {
+    ensureNotNull("taskId", taskId);
     ensureNotNull("variableName", variableName);
 
-    ExecutionEntity execution = commandContext
-      .getExecutionManager()
-      .findExecutionById(executionId);
+    TaskEntity task = Context
+      .getCommandContext()
+      .getTaskManager()
+      .findTaskById(taskId);
 
-    ensureNotNull("execution " + executionId + " doesn't exist", "execution", execution);
+    ensureNotNull("task " + taskId + " doesn't exist", "task", task);
 
-    T value;
+    TypedValue value;
 
     if (isLocal) {
-      value = execution.getVariableLocalTyped(variableName, deserializeValue);
+      value = task.getVariableLocalTyped(variableName, deserializeValue);
     } else {
-      value = execution.getVariableTyped(variableName, deserializeValue);
+      value = task.getVariableTyped(variableName, deserializeValue);
     }
 
     return value;
   }
-
 }

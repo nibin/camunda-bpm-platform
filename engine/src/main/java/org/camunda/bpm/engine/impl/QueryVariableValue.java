@@ -49,7 +49,11 @@ public class QueryVariableValue implements Serializable {
   public void initialize(VariableSerializers types) {
 
     if(variableInstanceEntity == null) {
-      TypedValueSerializer<?> serializer = types.findSerializerForValue(value);
+
+      // serializer implementation determines which fields are set on the entity
+      variableInstanceEntity = VariableInstanceEntity.create(name, value);
+
+      TypedValueSerializer<?> serializer = variableInstanceEntity.getSerializer();
       if(serializer.getType() == ValueType.BYTES){
         throw new ProcessEngineException("Variables of type ByteArray cannot be used to query");
 
@@ -67,8 +71,6 @@ public class QueryVariableValue implements Serializable {
 
       }
 
-      // serializer implementation determines which fields are set on the entity
-      variableInstanceEntity = VariableInstanceEntity.create(name, value);
 
     }
   }

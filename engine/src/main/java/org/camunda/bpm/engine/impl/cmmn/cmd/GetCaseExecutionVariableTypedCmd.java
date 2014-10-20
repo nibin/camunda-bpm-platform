@@ -10,52 +10,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.impl.cmd;
+package org.camunda.bpm.engine.impl.cmmn.cmd;
 
 import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 import java.io.Serializable;
 
+import org.camunda.bpm.engine.exception.cmmn.CaseExecutionNotFoundException;
+import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseExecutionEntity;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
+ * @author Roman Smirnov
  * @author Daniel Meyer
  *
  */
-public class GetExecutionVariableTypedCmd<T extends TypedValue> implements Command<T>, Serializable {
+public class GetCaseExecutionVariableTypedCmd implements Command<TypedValue>, Serializable {
 
   private static final long serialVersionUID = 1L;
-  protected String executionId;
+
+  protected String caseExecutionId;
   protected String variableName;
   protected boolean isLocal;
   protected boolean deserializeValue;
 
-  public GetExecutionVariableTypedCmd(String executionId, String variableName, boolean isLocal, boolean deserializeValue) {
-    this.executionId = executionId;
+  public GetCaseExecutionVariableTypedCmd(String caseExecutionId, String variableName, boolean isLocal, boolean deserializeValue) {
+    this.caseExecutionId = caseExecutionId;
     this.variableName = variableName;
     this.isLocal = isLocal;
     this.deserializeValue = deserializeValue;
   }
 
-  public T execute(CommandContext commandContext) {
-    ensureNotNull("executionId", executionId);
+  public TypedValue execute(CommandContext commandContext) {
+    ensureNotNull("caseExecutionId", caseExecutionId);
     ensureNotNull("variableName", variableName);
 
-    ExecutionEntity execution = commandContext
-      .getExecutionManager()
-      .findExecutionById(executionId);
+    CaseExecutionEntity caseExecution = commandContext
+      .getCaseExecutionManager()
+      .findCaseExecutionById(caseExecutionId);
 
-    ensureNotNull("execution " + executionId + " doesn't exist", "execution", execution);
+    ensureNotNull(CaseExecutionNotFoundException.class, "case execution " + caseExecutionId + " doesn't exist", "caseExecution", caseExecution);
 
-    T value;
+    TypedValue value;
 
     if (isLocal) {
-      value = execution.getVariableLocalTyped(variableName, deserializeValue);
+      value = caseExecution.getVariableLocalTyped(variableName, deserializeValue);
     } else {
-      value = execution.getVariableTyped(variableName, deserializeValue);
+      value = caseExecution.getVariableTyped(variableName, deserializeValue);
     }
 
     return value;

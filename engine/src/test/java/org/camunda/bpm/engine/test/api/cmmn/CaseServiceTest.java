@@ -13,6 +13,7 @@
 package org.camunda.bpm.engine.test.api.cmmn;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,9 @@ import org.camunda.bpm.engine.runtime.CaseExecutionQuery;
 import org.camunda.bpm.engine.runtime.CaseInstanceQuery;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.test.Deployment;
+import org.camunda.bpm.engine.variable.Variables;
+import org.camunda.bpm.engine.variable.value.ObjectValue;
+import org.camunda.bpm.engine.variable.value.StringValue;
 
 /**
  * @author Roman Smirnov
@@ -1139,6 +1143,8 @@ public class CaseServiceTest extends PluggableProcessEngineTestCase {
 
      assertEquals("abc", variables.get("aVariableName"));
      assertEquals(999, variables.get("anotherVariableName"));
+
+     assertEquals(variables, caseService.getVariables(caseExecutionId, true));
   }
 
   public void testGetVariablesInvalidCaseExecutionId() {
@@ -1196,6 +1202,8 @@ public class CaseServiceTest extends PluggableProcessEngineTestCase {
 
      assertEquals("abc", variables.get("aVariableName"));
      assertEquals(999, variables.get("anotherVariableName"));
+
+     assertEquals(variables, caseService.getVariables(caseExecutionId, names, true));
   }
 
   public void testGetVariablesWithVariablesNamesInvalidCaseExecutionId() {
@@ -1252,6 +1260,8 @@ public class CaseServiceTest extends PluggableProcessEngineTestCase {
 
      assertEquals("abc", variables.get("aVariableName"));
      assertEquals(999, variables.get("anotherVariableName"));
+
+     assertEquals(variables, caseService.getVariablesLocal(caseExecutionId, true));
   }
 
   public void testGetVariablesLocalInvalidCaseExecutionId() {
@@ -1312,6 +1322,8 @@ public class CaseServiceTest extends PluggableProcessEngineTestCase {
 
      assertEquals("abc", variables.get("aVariableName"));
      assertEquals(999, variables.get("anotherVariableName"));
+
+     assertEquals(variables, caseService.getVariablesLocal(caseExecutionId, names, true));
   }
 
   public void testGetVariablesLocalWithVariablesNamesInvalidCaseExecutionId() {
@@ -1424,6 +1436,117 @@ public class CaseServiceTest extends PluggableProcessEngineTestCase {
 
     try {
       caseService.getVariableLocal(null, "aVariableName");
+      fail("The case execution should not be found.");
+    } catch (NotValidException e) {
+
+    }
+  }
+
+  @Deployment(resources={"org/camunda/bpm/engine/test/api/cmmn/oneTaskCase.cmmn"})
+  public void testGetVariableTyped() {
+    // given:
+    // a deployed case definition
+    String caseDefinitionId = repositoryService
+        .createCaseDefinitionQuery()
+        .singleResult()
+        .getId();
+
+    // an active case instance
+     caseService
+        .withCaseDefinition(caseDefinitionId)
+        .setVariable("aVariableName", "abc")
+        .setVariable("anotherVariableName", 999)
+        .setVariable("aSerializedObject", Variables.objectValue(Arrays.asList("1", "2")).create())
+        .create()
+        .getId();
+
+     String caseExecutionId = caseService
+         .createCaseExecutionQuery()
+         .activityId("PI_HumanTask_1")
+         .singleResult()
+         .getId();
+
+     // when
+     StringValue stringValue = caseService.getVariableTyped(caseExecutionId, "aVariableName");
+     ObjectValue objectValue = caseService.getVariableTyped(caseExecutionId, "aSerializedObject");
+     ObjectValue serializedObjectValue = caseService.getVariableTyped(caseExecutionId, "aSerializedObject", false);
+
+     // then
+     assertNotNull(stringValue.getValue());
+     assertNotNull(objectValue.getValue());
+     assertTrue(objectValue.isDeserialized());
+     assertEquals(Arrays.asList("1", "2"), objectValue.getValue());
+     assertFalse(serializedObjectValue.isDeserialized());
+     assertNotNull(serializedObjectValue.getValueSerialized());
+  }
+
+  public void testGetVariableTypedInvalidCaseExecutionId() {
+    try {
+      caseService.getVariableTyped("invalid", "aVariableName");
+      fail("The case execution should not be found.");
+    } catch (NotFoundException e) {
+
+    }
+
+    try {
+      caseService.getVariableTyped(null, "aVariableName");
+      fail("The case execution should not be found.");
+    } catch (NotValidException e) {
+
+    }
+  }
+
+  @Deployment(resources={"org/camunda/bpm/engine/test/api/cmmn/oneTaskCase.cmmn"})
+  public void testGetVariableTypedLocal() {
+    // given:
+    // a deployed case definition
+    String caseDefinitionId = repositoryService
+        .createCaseDefinitionQuery()
+        .singleResult()
+        .getId();
+
+    // an active case instance
+     caseService
+        .withCaseDefinition(caseDefinitionId)
+        .create()
+        .getId();
+
+     String caseExecutionId = caseService
+         .createCaseExecutionQuery()
+         .activityId("PI_HumanTask_1")
+         .singleResult()
+         .getId();
+
+     caseService.withCaseExecution(caseExecutionId)
+        .setVariableLocal("aVariableName", "abc")
+        .setVariableLocal("anotherVariableName", 999)
+        .setVariableLocal("aSerializedObject", Variables.objectValue(Arrays.asList("1", "2")).create())
+        .execute();
+
+     // when
+     StringValue stringValue = caseService.getVariableLocalTyped(caseExecutionId, "aVariableName");
+     ObjectValue objectValue = caseService.getVariableLocalTyped(caseExecutionId, "aSerializedObject");
+     ObjectValue serializedObjectValue = caseService.getVariableLocalTyped(caseExecutionId, "aSerializedObject", false);
+
+     // then
+     assertNotNull(stringValue.getValue());
+     assertNotNull(objectValue.getValue());
+     assertTrue(objectValue.isDeserialized());
+     assertEquals(Arrays.asList("1", "2"), objectValue.getValue());
+     assertFalse(serializedObjectValue.isDeserialized());
+     assertNotNull(serializedObjectValue.getValueSerialized());
+  }
+
+  public void testGetVariableLocalTypedInvalidCaseExecutionId() {
+    try {
+      caseService.getVariableLocalTyped("invalid", "aVariableName");
+      fail("The case execution should not be found.");
+    } catch (NotFoundException e) {
+
+    }
+
+    try {
+      caseService.getVariableLocalTyped(null, "aVariableName");
       fail("The case execution should not be found.");
     } catch (NotValidException e) {
 
