@@ -70,7 +70,7 @@ public class VariableValueDto {
   public TypedValue toTypedValue(ProcessEngine processEngine, ObjectMapper objectMapper) {
     ValueTypeResolver valueTypeResolver = ((ProcessEngineImpl)processEngine).getProcessEngineConfiguration().getValueTypeResolver();
 
-    ValueType valueType = valueTypeResolver.typeForName(type);
+    ValueType valueType = valueTypeResolver.typeForName(fromRestApiTypeName(type));
     if(valueType == null) {
       return Variables.untypedValue(value);
     }
@@ -129,7 +129,8 @@ public class VariableValueDto {
 
   public static void fromTypedValue(VariableValueDto dto, TypedValue typedValue) {
 
-    dto.setType(typedValue.getType().getName());
+    String name = typedValue.getType().getName();
+    dto.setType(toRestApiTypeName(name));
     dto.setValueInfo(typedValue.getType().getValueInfo(typedValue));
 
     if(typedValue instanceof SerializableValue) {
@@ -147,6 +148,14 @@ public class VariableValueDto {
       dto.setValue(typedValue.getValue());
     }
 
+  }
+
+  public static String toRestApiTypeName(String name) {
+    return name.substring(0, 1).toUpperCase() + name.substring(1);
+  }
+
+  public static String fromRestApiTypeName(String name) {
+    return name.substring(0, 1).toLowerCase() + name.substring(1);
   }
 
   public static Map<String, VariableValueDto> fromVariableMap(VariableMap variables) {

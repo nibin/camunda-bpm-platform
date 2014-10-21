@@ -34,7 +34,7 @@ public class ObjectTypeImpl extends AbstractValueTypeImpl implements Serializabl
 
   private static final long serialVersionUID = 1L;
 
-  public static final String TYPE_NAME = "Object";
+  public static final String TYPE_NAME = "object";
 
   public ObjectTypeImpl() {
     super(TYPE_NAME);

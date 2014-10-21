@@ -309,12 +309,14 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
   }
 
   public String getTypeName() {
+    ValueType type = null;
     if(serializerName == null) {
-      return ValueType.NULL.getName();
+      type = ValueType.NULL;
     }
     else {
-      return getSerializer().getType().getName();
+      type = getSerializer().getType();
     }
+    return type.getName();
   }
 
   // entity lifecycle /////////////////////////////////////////////////////////

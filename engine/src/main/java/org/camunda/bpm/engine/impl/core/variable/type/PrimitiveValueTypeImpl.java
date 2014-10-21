@@ -43,7 +43,7 @@ public abstract class PrimitiveValueTypeImpl extends AbstractValueTypeImpl imple
   protected Class<?> javaType;
 
   public PrimitiveValueTypeImpl(Class<?> javaType) {
-    this(javaType.getSimpleName(), javaType);
+    this(javaType.getSimpleName().toLowerCase(), javaType);
   }
 
   public PrimitiveValueTypeImpl(String name, Class<?> javaType) {
@@ -88,7 +88,7 @@ public abstract class PrimitiveValueTypeImpl extends AbstractValueTypeImpl imple
     private static final long serialVersionUID = 1L;
 
     public BytesTypeImpl() {
-      super("Bytes", byte[].class);
+      super("bytes", byte[].class);
     }
 
     public BytesValue createValue(Object value, Map<String, Object> valueInfo) {
@@ -158,7 +158,7 @@ public abstract class PrimitiveValueTypeImpl extends AbstractValueTypeImpl imple
     private static final long serialVersionUID = 1L;
 
     public NullTypeImpl() {
-      super("Null", NullType.class);
+      super("null", NullType.class);
     }
 
     public TypedValue createValue(Object value, Map<String, Object> valueInfo) {

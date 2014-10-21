@@ -31,7 +31,7 @@ public abstract class PrimitiveValueSerializer<T extends PrimitiveValue<?>> exte
     // there is only a single serializer for a primitive variable type.
     // If multiple serializers exist for the same type, they must override
     // this method and return distinct values.
-    return valueType.getName().toLowerCase();
+    return valueType.getName();
   }
 
   public T readValue(ValueFields valueFields, boolean deserializeObjectValue) {
