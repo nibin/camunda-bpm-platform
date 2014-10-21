@@ -12,9 +12,8 @@
  */
 package org.camunda.bpm.engine.rest.sub.history.impl;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
@@ -22,9 +21,8 @@ import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.history.HistoricVariableInstanceQuery;
 import org.camunda.bpm.engine.rest.dto.history.HistoricVariableInstanceDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
+import org.camunda.bpm.engine.rest.impl.TypedValueUtil;
 import org.camunda.bpm.engine.rest.sub.history.HistoricVariableInstanceResource;
-import org.camunda.bpm.engine.variable.type.ValueType;
-import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
  * @author Daniel Meyer
@@ -55,27 +53,16 @@ public class HistoricVariableInstanceResourceImpl implements HistoricVariableIns
     }
   }
 
-  public InputStream getBinaryVariable() {
+  public Response getBinaryVariable() {
     HistoricVariableInstance variableInstance = baseQuery()
         .disableCustomObjectDeserialization()
         .singleResult();
     if(variableInstance != null) {
-
-      TypedValue typedValue = variableInstance.getTypedValue();
-      if(typedValue.getType() == ValueType.BYTES) {
-        if(typedValue.getValue() != null) {
-          return new ByteArrayInputStream((byte[]) typedValue.getValue());
-        } else {
-          return new ByteArrayInputStream(new byte[0]);
-        }
-
-      } else {
-        throw new InvalidRequestException(Status.BAD_REQUEST, "Variable instance with Id '"+variableId + "' is not a binary variable.");
-
-      }
+      ResponseBuilder responseBuilder = Response.ok();
+      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableInstance.getTypedValue());
 
     } else {
-      throw new InvalidRequestException(Status.NOT_FOUND, "Variable instance with Id '"+variableId + "' does not exist.");
+      throw new InvalidRequestException(Status.NOT_FOUND, "Historic variable instance with Id '"+variableId + "' does not exist.");
     }
   }
 

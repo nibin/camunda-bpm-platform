@@ -12,9 +12,8 @@
  */
 package org.camunda.bpm.engine.rest.sub.history.impl;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
@@ -23,9 +22,8 @@ import org.camunda.bpm.engine.history.HistoricDetailQuery;
 import org.camunda.bpm.engine.history.HistoricVariableUpdate;
 import org.camunda.bpm.engine.rest.dto.history.HistoricDetailDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
+import org.camunda.bpm.engine.rest.impl.TypedValueUtil;
 import org.camunda.bpm.engine.rest.sub.history.HistoricDetailResource;
-import org.camunda.bpm.engine.variable.type.ValueType;
-import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
  * @author Daniel Meyer
@@ -56,7 +54,7 @@ public class HistoricDetailResourceImpl implements HistoricDetailResource {
     }
   }
 
-  public InputStream getBinaryVariable() {
+  public Response getBinaryVariable() {
     HistoricDetail variableInstance = baseQuery()
         .disableCustomObjectDeserialization()
         .singleResult();
@@ -67,19 +65,10 @@ public class HistoricDetailResourceImpl implements HistoricDetailResource {
       throw new InvalidRequestException(Status.BAD_REQUEST, "Historic detail with Id '"+detailId + "' is not a variable update.");
 
     } else {
-      TypedValue typedValue = ((HistoricVariableUpdate) variableInstance).getTypedValue();
-      if(typedValue.getType() == ValueType.BYTES) {
-        if(typedValue.getValue() != null) {
-          return new ByteArrayInputStream((byte[]) typedValue.getValue());
-        } else {
-          return new ByteArrayInputStream(new byte[0]);
-        }
+      HistoricVariableUpdate variableUpdate = (HistoricVariableUpdate) variableInstance;
 
-      } else {
-        throw new InvalidRequestException(Status.BAD_REQUEST, "Historic detail with Id '"+detailId + "' is not a binary variable.");
-
-      }
-
+      ResponseBuilder responseBuilder = Response.ok();
+      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableUpdate.getTypedValue());
     }
   }
 

@@ -78,7 +78,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
       .body("id", equalTo(builder.getId()))
       .body("variableName", equalTo(builder.getName()))
       .body("variableType", equalTo(builder.getTypedValue().getType().getName()))
-      .body("value", equalTo(builder.getTypedValue()))
+      .body("value", equalTo(builder.getValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
       .body("activityInstanceId", equalTo(builder.getActivityInstanceId()))
@@ -97,7 +97,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     MockHistoricVariableUpdateBuilder builder = MockProvider.mockHistoricVariableUpdate();
 
     HistoricVariableUpdate detailMock = builder
-        .typedValue(null)
+        .typedValue(Variables.byteArrayValue(null))
         .build();
 
     when(historicDetailQueryMock.detailId(detailMock.getId())).thenReturn(historicDetailQueryMock);
@@ -111,7 +111,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
       .body("id", equalTo(builder.getId()))
       .body("variableName", equalTo(builder.getName()))
       .body("variableType", equalTo(builder.getTypedValue().getType().getName()))
-      .body("value", equalTo(builder.getTypedValue()))
+      .body("value", equalTo(builder.getValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
       .body("activityInstanceId", equalTo(builder.getActivityInstanceId()))
@@ -207,7 +207,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     given().pathParam("id", MockProvider.EXAMPLE_HISTORIC_VAR_UPDATE_ID)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
-      .body(containsString("Historic detail with Id '"+detailMock.getId()+"' is not a binary variable"))
+      .body(containsString("Value is not a binary value"))
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     verify(historicDetailQueryMock, never()).disableBinaryFetching();
