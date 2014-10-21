@@ -54,9 +54,9 @@ public abstract class AbstractVariableScope implements Serializable, VariableSco
     return getVariables(true);
   }
 
-  public VariableMapImpl getVariables(boolean deserializeObjectValues) {
+  public VariableMapImpl getVariables(boolean deserializeValues) {
     VariableMapImpl variableMap = new VariableMapImpl();
-    collectVariables(variableMap, null, false, deserializeObjectValues);
+    collectVariables(variableMap, null, false, deserializeValues);
     return variableMap;
   }
 
@@ -70,21 +70,21 @@ public abstract class AbstractVariableScope implements Serializable, VariableSco
     return variables;
   }
 
-  public void collectVariables(VariableMapImpl resultVariables, Collection<String> variableNames, boolean isLocal, boolean deserializeObjectValues) {
+  public void collectVariables(VariableMapImpl resultVariables, Collection<String> variableNames, boolean isLocal, boolean deserializeValues) {
     boolean collectAll = (variableNames == null);
 
     Map<String, CoreVariableInstance> localVariables = getVariableInstancesLocal();
     for (Entry<String, CoreVariableInstance> var : localVariables.entrySet()) {
       if(!resultVariables.containsKey(var.getKey())
          && (collectAll || variableNames.contains(var.getKey()))) {
-        resultVariables.put(var.getKey(), var.getValue().getTypedValue(deserializeObjectValues));
+        resultVariables.put(var.getKey(), var.getValue().getTypedValue(deserializeValues));
       }
     }
     if(!isLocal) {
       AbstractVariableScope parentScope = getParentVariableScope();
       // Do not propagate to parent if all variables in 'variableNames' are already collected!
       if(parentScope != null && (collectAll || !resultVariables.keySet().equals(variableNames))) {
-        parentScope.collectVariables(resultVariables, variableNames, isLocal, deserializeObjectValues);
+        parentScope.collectVariables(resultVariables, variableNames, isLocal, deserializeValues);
       }
     }
   }
@@ -121,22 +121,22 @@ public abstract class AbstractVariableScope implements Serializable, VariableSco
     return getVariableTyped(variableName, true);
   }
 
-  public <T extends TypedValue> T getVariableTyped(String variableName, boolean deserializeObjectValue) {
-    return getTypedValueFromVariableInstance(deserializeObjectValue, getVariableInstance(variableName));
+  public <T extends TypedValue> T getVariableTyped(String variableName, boolean deserializeValue) {
+    return getTypedValueFromVariableInstance(deserializeValue, getVariableInstance(variableName));
   }
 
   public <T extends TypedValue> T getVariableLocalTyped(String variableName) {
     return getVariableLocalTyped(variableName, true);
   }
 
-  public <T extends TypedValue> T getVariableLocalTyped(String variableName, boolean deserializeObjectValue) {
-    return getTypedValueFromVariableInstance(deserializeObjectValue, getVariableInstanceLocal(variableName));
+  public <T extends TypedValue> T getVariableLocalTyped(String variableName, boolean deserializeValue) {
+    return getTypedValueFromVariableInstance(deserializeValue, getVariableInstanceLocal(variableName));
   }
 
   @SuppressWarnings("unchecked")
-  private <T extends TypedValue> T getTypedValueFromVariableInstance(boolean deserializeObjectValue, CoreVariableInstance variableInstance) {
+  private <T extends TypedValue> T getTypedValueFromVariableInstance(boolean deserializeValue, CoreVariableInstance variableInstance) {
     if(variableInstance != null) {
-      return (T) variableInstance.getTypedValue(deserializeObjectValue);
+      return (T) variableInstance.getTypedValue(deserializeValue);
     }
     else {
       return null;

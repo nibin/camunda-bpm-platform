@@ -14,7 +14,7 @@ package org.camunda.bpm.engine.impl.variable.serializer;
 
 import org.camunda.bpm.engine.impl.core.variable.value.UntypedValueImpl;
 import org.camunda.bpm.engine.variable.type.ValueType;
-import org.camunda.bpm.engine.variable.value.ObjectValue;
+import org.camunda.bpm.engine.variable.value.SerializableValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 /**
@@ -54,11 +54,11 @@ public interface TypedValueSerializer<T extends TypedValue> {
    * Retrieve a {@link TypedValue} from the provided {@link ValueFields}.
    *
    * @param valueFields the {@link ValueFields} to retrieve the value from
-   * @param deserializeObjectValue indicates whether {@link ObjectValue ObjectValues} should be deserialized.
-   *        (only applicable if this is an object value)
+   * @param deserializeValue indicates whether a {@link SerializableValue} should be deserialized.
+   *
    * @return the {@link TypedValue}
    */
-  T readValue(ValueFields valueFields, boolean deserializeObjectValue);
+  T readValue(ValueFields valueFields, boolean deserializeValue);
 
   /**
    * Used for auto-detecting the value type of a variable.

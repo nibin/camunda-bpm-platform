@@ -249,9 +249,9 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     return null;
   }
 
-  public TypedValue getTypedValue(boolean deserializeObjectValues) {
+  public TypedValue getTypedValue(boolean deserializeValue) {
     if (cachedValue == null) {
-      cachedValue = getSerializer().readValue(this, deserializeObjectValues);
+      cachedValue = getSerializer().readValue(this, deserializeValue);
     }
     return cachedValue;
   }

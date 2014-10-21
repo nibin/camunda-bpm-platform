@@ -31,7 +31,7 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
 import org.camunda.bpm.engine.variable.VariableMap;
-import org.camunda.bpm.engine.variable.value.ObjectValue;
+import org.camunda.bpm.engine.variable.value.SerializableValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
 
@@ -476,11 +476,11 @@ public interface RuntimeService {
 
   /** All variables visible from the given execution scope (including parent scopes).
    * @param executionId id of process instance or execution, cannot be null.
-   * @param deserializeObjectValues if false, {@link ObjectValue}s will not be deserialized
+   * @param deserializeValues if false, {@link SerializableValue}s will not be deserialized
    * @return the variables or an empty map if no such variables are found.
    * @throws ProcessEngineException when no execution is found for the given executionId.
    * @since 7.2 */
-  VariableMap getVariables(String executionId, boolean deserializeObjectValues);
+  VariableMap getVariables(String executionId, boolean deserializeValues);
 
   /** All variable values that are defined in the execution scope, without taking outer scopes into account.
    * If you have many task local variables and you only need a few, consider using {@link #getVariablesLocal(String, Collection)}
@@ -494,11 +494,11 @@ public interface RuntimeService {
    * If you have many task local variables and you only need a few, consider using {@link #getVariablesLocal(String, Collection)}
    * for better performance.
    * @param executionId id of execution, cannot be null.
-   * @param deserializeObjectValues if false, {@link ObjectValue}s will not be deserialized
+   * @param deserializeObjectValues if false, {@link SerializableValue}s will not be deserialized
    * @return the variables or an empty map if no such variables are found.
    * @throws ProcessEngineException when no execution is found for the given executionId.
    * @since 7.2 */
-  VariableMap getVariablesLocal(String executionId, boolean deserializeObjectValues);
+  VariableMap getVariablesLocal(String executionId, boolean deserializeValues);
 
    /** The variable values for all given variableNames, takes all variables into account which are visible from the given execution scope (including parent scopes).
    * @param executionId id of process instance or execution, cannot be null.
@@ -510,11 +510,11 @@ public interface RuntimeService {
   /** The variable values for all given variableNames, takes all variables into account which are visible from the given execution scope (including parent scopes).
   * @param executionId id of process instance or execution, cannot be null.
   * @param variableNames the collection of variable names that should be retrieved.
-  * @param deserializeObjectValues if false, {@link ObjectValue}s will not be deserialized
+  * @param deserializeObjectValues if false, {@link SerializableValue}s will not be deserialized
   * @return the variables or an empty map if no such variables are found.
   * @throws ProcessEngineException when no execution is found for the given executionId.
   * @since 7.2 */
-  VariableMap getVariables(String executionId, Collection<String> variableNames, boolean deserializeObjectValues);
+  VariableMap getVariables(String executionId, Collection<String> variableNames, boolean deserializeValues);
 
    /** The variable values for the given variableNames only taking the given execution scope into account, not looking in outer scopes.
    * @param executionId id of execution, cannot be null.
@@ -526,11 +526,11 @@ public interface RuntimeService {
   /** The variable values for the given variableNames only taking the given execution scope into account, not looking in outer scopes.
   * @param executionId id of execution, cannot be null.
   * @param variableNames the collection of variable names that should be retrieved.
-  * @param deserializeObjectValues if false, {@link ObjectValue}s will not be deserialized
+  * @param deserializeObjectValues if false, {@link SerializableValue}s will not be deserialized
   * @return the variables or an empty map if no such variables are found.
   * @throws ProcessEngineException when no execution is found for the given executionId.
   * @since 7.2 */
- VariableMap getVariablesLocal(String executionId, Collection<String> variableNames, boolean deserializeObjectValues);
+ VariableMap getVariablesLocal(String executionId, Collection<String> variableNames, boolean deserializeValues);
 
   /** The variable value.  Searching for the variable is done in all scopes that are visible to the given execution (including parent scopes).
    * Returns null when no variable value is found with the given name or when the value is set to null.
@@ -555,11 +555,11 @@ public interface RuntimeService {
    *
    * @param executionId id of process instance or execution, cannot be null.
    * @param variableName name of variable, cannot be null.
-   * @param deserializeObjectValue if false, {@link ObjectValue}s will not be deserialized
+   * @param deserializeValue if false, a {@link SerializableValue} will not be deserialized
    * @return the variable value or null if the variable is undefined.
    * @throws ProcessEngineException when no execution is found for the given executionId.
    * @since 7.2 */
-  <T extends TypedValue> T getVariableTyped(String executionId, String variableName, boolean deserializeObjectValue);
+  <T extends TypedValue> T getVariableTyped(String executionId, String variableName, boolean deserializeValue);
 
   /** The variable value for an execution. Returns the value when the variable is set
    * for the execution (and not searching parent scopes). Returns null when no variable value is found with the given name or when the value is set to null.  */
@@ -580,11 +580,11 @@ public interface RuntimeService {
    *
    * @param executionId id of process instance or execution, cannot be null.
    * @param variableName name of variable, cannot be null.
-   * @param deserializeObjectValue if false, {@link ObjectValue}s will not be deserialized
+   * @param deserializeValue if false, a {@link SerializableValue} will not be deserialized
    * @return the variable value or null if the variable is undefined.
    * @throws ProcessEngineException when no execution is found for the given executionId.
    * @since 7.2 */
-  <T extends TypedValue> T getVariableLocalTyped(String executionId, String variableName, boolean deserializeObjectValue);
+  <T extends TypedValue> T getVariableLocalTyped(String executionId, String variableName, boolean deserializeValue);
 
   /** Update or create a variable for an execution.  If the variable does not already exist
    * somewhere in the execution hierarchy (i.e. the specified execution or any ancestor),

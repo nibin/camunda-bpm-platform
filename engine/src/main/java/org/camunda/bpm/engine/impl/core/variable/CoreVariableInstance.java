@@ -22,6 +22,6 @@ public interface CoreVariableInstance {
 
   String getName();
 
-  TypedValue getTypedValue(boolean deserializeObjectValue);
+  TypedValue getTypedValue(boolean deserializeValue);
 
 }

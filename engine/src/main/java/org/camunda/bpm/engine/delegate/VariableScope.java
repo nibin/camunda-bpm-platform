@@ -27,11 +27,11 @@ public interface VariableScope {
 
   VariableMap getVariables();
 
-  VariableMap getVariables(boolean deserializeObjectValues);
+  VariableMap getVariables(boolean deserializeValues);
 
   VariableMap getVariablesLocal();
 
-  VariableMap getVariablesLocal(boolean deserializeObjectValues);
+  VariableMap getVariablesLocal(boolean deserializeValues);
 
   Object getVariable(String variableName);
 
@@ -39,11 +39,11 @@ public interface VariableScope {
 
   <T extends TypedValue> T getVariableTyped(String variableName);
 
-  <T extends TypedValue> T getVariableTyped(String variableName, boolean deserializeObjectValue);
+  <T extends TypedValue> T getVariableTyped(String variableName, boolean deserializeValue);
 
   <T extends TypedValue> T getVariableLocalTyped(String variableName);
 
-  <T extends TypedValue> T getVariableLocalTyped(String variableName, boolean deserializeObjectValue);
+  <T extends TypedValue> T getVariableLocalTyped(String variableName, boolean deserializeValue);
 
   Set<String> getVariableNames();
 
