@@ -24,7 +24,7 @@ public class HistoricVariableJsonSerializationTest extends PluggableProcessEngin
   public void testSelectHistoricVariableInstances() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SimpleBean bean = new SimpleBean("a String", 42, false);
+    JsonSerializable bean = new JsonSerializable("a String", 42, false);
     runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(bean).serializationDataFormat(JSON_FORMAT_NAME).create());
 
     HistoricVariableInstance historicVariable = historyService.createHistoricVariableInstanceQuery().singleResult();
@@ -34,7 +34,7 @@ public class HistoricVariableJsonSerializationTest extends PluggableProcessEngin
     assertEquals(ValueType.OBJECT.getName(), historicVariable.getTypeName());
     assertEquals(ValueType.OBJECT.getName(), historicVariable.getVariableTypeName());
 
-    SimpleBean historyValue = (SimpleBean) historicVariable.getValue();
+    JsonSerializable historyValue = (JsonSerializable) historicVariable.getValue();
     assertEquals(bean.getStringProperty(), historyValue.getStringProperty());
     assertEquals(bean.getIntProperty(), historyValue.getIntProperty());
     assertEquals(bean.getBooleanProperty(), historyValue.getBooleanProperty());
@@ -44,7 +44,7 @@ public class HistoricVariableJsonSerializationTest extends PluggableProcessEngin
   public void testSelectHistoricSerializedValues() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SimpleBean bean = new SimpleBean("a String", 42, false);
+    JsonSerializable bean = new JsonSerializable("a String", 42, false);
     runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(bean).serializationDataFormat(JSON_FORMAT_NAME));
 
     HistoricVariableInstance historicVariable = historyService.createHistoricVariableInstanceQuery().singleResult();
@@ -54,14 +54,14 @@ public class HistoricVariableJsonSerializationTest extends PluggableProcessEngin
     ObjectValue typedValue = (ObjectValue) historicVariable.getTypedValue();
     assertEquals(JSON_FORMAT_NAME, typedValue.getSerializationDataFormat());
     JSONAssert.assertEquals(bean.toExpectedJsonString(),new String(typedValue.getValueSerialized()), true);
-    assertEquals(SimpleBean.class.getName(), typedValue.getObjectTypeName());
+    assertEquals(JsonSerializable.class.getName(), typedValue.getObjectTypeName());
   }
 
   @Deployment(resources = ONE_TASK_PROCESS)
   public void testSelectHistoricSerializedValuesUpdate() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SimpleBean bean = new SimpleBean("a String", 42, false);
+    JsonSerializable bean = new JsonSerializable("a String", 42, false);
     runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(bean).serializationDataFormat(JSON_FORMAT_NAME));
 
     if (ProcessEngineConfiguration.HISTORY_FULL.equals(processEngineConfiguration.getHistory())) {
@@ -75,7 +75,7 @@ public class HistoricVariableJsonSerializationTest extends PluggableProcessEngin
       assertEquals(ValueType.OBJECT.getName(), historicUpdate.getTypeName());
       assertEquals(ValueType.OBJECT.getName(), historicUpdate.getVariableTypeName());
 
-      SimpleBean historyValue = (SimpleBean) historicUpdate.getValue();
+      JsonSerializable historyValue = (JsonSerializable) historicUpdate.getValue();
       assertEquals(bean.getStringProperty(), historyValue.getStringProperty());
       assertEquals(bean.getIntProperty(), historyValue.getIntProperty());
       assertEquals(bean.getBooleanProperty(), historyValue.getBooleanProperty());
@@ -83,7 +83,7 @@ public class HistoricVariableJsonSerializationTest extends PluggableProcessEngin
       ObjectValue typedValue = (ObjectValue) historicUpdate.getTypedValue();
       assertEquals(JSON_FORMAT_NAME, typedValue.getSerializationDataFormat());
       JSONAssert.assertEquals(bean.toExpectedJsonString(),new String(typedValue.getValueSerialized()), true);
-      assertEquals(SimpleBean.class.getName(), typedValue.getObjectTypeName());
+      assertEquals(JsonSerializable.class.getName(), typedValue.getObjectTypeName());
 
     }
   }

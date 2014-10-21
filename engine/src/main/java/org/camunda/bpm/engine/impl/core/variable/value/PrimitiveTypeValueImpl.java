@@ -38,12 +38,6 @@ public class PrimitiveTypeValueImpl<T> extends AbstractTypedValue<T> implements 
     super(value, type);
   }
 
-  public T setValue(T value) {
-    T prevValue = this.value;
-    this.value = value;
-    return prevValue;
-  }
-
   public PrimitiveValueType getType() {
     return (PrimitiveValueType) super.getType();
   }

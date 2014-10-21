@@ -264,7 +264,7 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     if(serializerName != null) {
       TypedValueSerializer<?> currentSerializer = getSerializer();
 
-      // check whether the current serializer can candle the new value
+      // check whether the current serializer can handle the new value
       if(currentSerializer.canHandle(value)) {
         valueSerializer = currentSerializer;
       }

@@ -872,7 +872,7 @@ public abstract class CmmnExecution extends CoreExecution implements CmmnCaseIns
                   .getDelegateInterceptor()
                   .handleInvocation(invocation);
               } catch (Exception e) {
-                throw new ProcessEngineException("Variable listener invocation failed", e);
+                throw new ProcessEngineException("Variable listener invocation failed: "+e.getMessage(), e);
               }
             }
           }

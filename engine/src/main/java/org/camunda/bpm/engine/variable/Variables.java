@@ -112,8 +112,7 @@ public class Variables {
   public static TypedValue untypedValue(Object value) {
     if(value == null) {
       return untypedNullValue();
-    }
-    else if (value instanceof TypedValueBuilder<?>) {
+    } else if (value instanceof TypedValueBuilder<?>) {
       return ((TypedValueBuilder<?>) value).create();
     }
     else if (value instanceof TypedValue) {

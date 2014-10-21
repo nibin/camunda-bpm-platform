@@ -12,8 +12,6 @@
  */
 package org.camunda.bpm.engine.impl.core.variable.value;
 
-import javax.lang.model.type.NullType;
-
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.variable.type.SerializableValueType;
 import org.camunda.bpm.engine.variable.type.ValueType;
@@ -104,7 +102,7 @@ public class ObjectValueImpl extends AbstractTypedValue<Object> implements Objec
     Object value = getValue();
 
     if(value == null) {
-      return NullType.class;
+      return null;
     }
     else {
       return value.getClass();

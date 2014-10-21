@@ -14,6 +14,9 @@
 
 package org.camunda.bpm.engine.test.variables;
 
+import static org.camunda.bpm.engine.test.variables.TypedValueAssert.assertObjectValueDeserializedNull;
+import static org.camunda.bpm.engine.test.variables.TypedValueAssert.assertObjectValueSerializedNull;
+import static org.camunda.bpm.engine.test.variables.TypedValueAssert.assertUntypedNullValue;
 import static org.camunda.bpm.engine.variable.Variables.*;
 
 import java.util.ArrayList;
@@ -28,6 +31,7 @@ import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.ObjectValue;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.camunda.bpm.engine.variable.value.builder.SerializedObjectValueBuilder;
 import org.camunda.spin.DataFormats;
 import org.json.JSONException;
@@ -45,7 +49,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   public void testSerializationAsJson() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SimpleBean bean = new SimpleBean("a String", 42, true);
+    JsonSerializable bean = new JsonSerializable("a String", 42, true);
     // request object to be serialized as JSON
     runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(bean).serializationDataFormat(JSON_FORMAT_NAME).create());
 
@@ -60,11 +64,11 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     assertTrue(typedValue.isDeserialized());
 
     assertEquals(bean, typedValue.getValue());
-    assertEquals(bean, typedValue.getValue(SimpleBean.class));
-    assertEquals(SimpleBean.class, typedValue.getObjectType());
+    assertEquals(bean, typedValue.getValue(JsonSerializable.class));
+    assertEquals(JsonSerializable.class, typedValue.getObjectType());
 
     assertEquals(JSON_FORMAT_NAME, typedValue.getSerializationDataFormat());
-    assertEquals(SimpleBean.class.getName(), typedValue.getObjectTypeName());
+    assertEquals(JsonSerializable.class.getName(), typedValue.getObjectTypeName());
     JSONAssert.assertEquals(bean.toExpectedJsonString(), new String(typedValue.getValueSerialized()), true);
   }
 
@@ -72,9 +76,9 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   public void testListSerializationAsJson() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    List<SimpleBean> beans = new ArrayList<SimpleBean>();
+    List<JsonSerializable> beans = new ArrayList<JsonSerializable>();
     for (int i = 0; i < 20; i++) {
-      beans.add(new SimpleBean("a String" + i, 42 + i, true));
+      beans.add(new JsonSerializable("a String" + i, 42 + i, true));
     }
 
     runtimeService.setVariable(instance.getId(), "simpleBeans", objectValue(beans).serializationDataFormat(JSON_FORMAT_NAME).create());
@@ -147,7 +151,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     }
 
     try {
-      objectValue.getValue(SimpleBean.class);
+      objectValue.getValue(JsonSerializable.class);
       fail("exception expected");
     }
     catch(IllegalStateException e) {
@@ -168,10 +172,10 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   public void testFailForNonExistingSerializationFormat() {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SimpleBean simpleBean = new SimpleBean();
+    JsonSerializable jsonSerializable = new JsonSerializable();
 
     try {
-      runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(simpleBean).serializationDataFormat("non existing data format"));
+      runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(jsonSerializable).serializationDataFormat("non existing data format"));
       fail("Exception expected");
     } catch (ProcessEngineException e) {
       assertTextPresent("Cannot find serializer for value", e.getMessage());
@@ -187,7 +191,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
 
       @Override
       public Void execute(CommandContext commandContext) {
-        SimpleBean bean = new SimpleBean("a String", 42, true);
+        JsonSerializable bean = new JsonSerializable("a String", 42, true);
         runtimeService.setVariable(instance.getId(), "simpleBean", bean);
 
         Object returnedBean = runtimeService.getVariable(instance.getId(), "simpleBean");
@@ -225,7 +229,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   public void testGetSerializedVariableValue() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
-    SimpleBean bean = new SimpleBean("a String", 42, true);
+    JsonSerializable bean = new JsonSerializable("a String", 42, true);
     runtimeService.setVariable(instance.getId(), "simpleBean", objectValue(bean).serializationDataFormat(JSON_FORMAT_NAME).create());
 
     ObjectValue typedValue = runtimeService.getVariableTyped(instance.getId(), "simpleBean", false);
@@ -237,7 +241,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   @Deployment(resources = ONE_TASK_PROCESS)
   public void testSetSerializedVariableValue() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
-    SimpleBean bean = new SimpleBean("a String", 42, true);
+    JsonSerializable bean = new JsonSerializable("a String", 42, true);
     String beanAsJson = bean.toExpectedJsonString();
 
     SerializedObjectValueBuilder serializedValue = serializedObjectValue(beanAsJson)
@@ -247,7 +251,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     runtimeService.setVariable(instance.getId(), "simpleBean", serializedValue);
 
     // java object can be retrieved
-    SimpleBean returnedBean = (SimpleBean) runtimeService.getVariable(instance.getId(), "simpleBean");
+    JsonSerializable returnedBean = (JsonSerializable) runtimeService.getVariable(instance.getId(), "simpleBean");
     assertEquals(bean, returnedBean);
 
     // validate typed value metadata
@@ -260,7 +264,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   @Deployment(resources = ONE_TASK_PROCESS)
   public void testSetSerializedVariableValueNoTypeName() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
-    SimpleBean bean = new SimpleBean("a String", 42, true);
+    JsonSerializable bean = new JsonSerializable("a String", 42, true);
     String beanAsJson = bean.toExpectedJsonString();
 
     SerializedObjectValueBuilder serializedValue = serializedObjectValue(beanAsJson)
@@ -279,7 +283,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
   @Deployment(resources = ONE_TASK_PROCESS)
   public void testSetSerializedVariableValueMismatchingTypeName() throws JSONException {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
-    SimpleBean bean = new SimpleBean("a String", 42, true);
+    JsonSerializable bean = new JsonSerializable("a String", 42, true);
     String beanAsJson = bean.toExpectedJsonString();
 
     SerializedObjectValueBuilder serializedValue = serializedObjectValue(beanAsJson)
@@ -318,12 +322,12 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
 
     SerializedObjectValueBuilder serializedValue = serializedObjectValue()
       .serializationDataFormat(JSON_FORMAT_NAME)
-      .objectTypeName(SimpleBean.class.getCanonicalName());
+      .objectTypeName(JsonSerializable.class.getCanonicalName());
 
     runtimeService.setVariable(instance.getId(), "simpleBean", serializedValue);
 
     // null can be retrieved
-    SimpleBean returnedBean = (SimpleBean) runtimeService.getVariable(instance.getId(), "simpleBean");
+    JsonSerializable returnedBean = (JsonSerializable) runtimeService.getVariable(instance.getId(), "simpleBean");
     assertNull(returnedBean);
 
     // validate typed value metadata
@@ -331,7 +335,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     assertNull(typedValue.getValue());
     assertNull(typedValue.getValueSerialized());
     assertEquals(JSON_FORMAT_NAME, typedValue.getSerializationDataFormat());
-    assertEquals(SimpleBean.class.getCanonicalName(), typedValue.getObjectTypeName());
+    assertEquals(JsonSerializable.class.getCanonicalName(), typedValue.getObjectTypeName());
 
   }
 
@@ -346,7 +350,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     runtimeService.setVariable(instance.getId(), "simpleBean", serializedValue);
 
     // null can be retrieved
-    SimpleBean returnedBean = (SimpleBean) runtimeService.getVariable(instance.getId(), "simpleBean");
+    JsonSerializable returnedBean = (JsonSerializable) runtimeService.getVariable(instance.getId(), "simpleBean");
     assertNull(returnedBean);
 
     // validate typed value metadata
@@ -357,7 +361,7 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     assertNull(typedValue.getObjectTypeName());
   }
 
-  protected String toExpectedJsonArray(List<SimpleBean> beans) {
+  protected String toExpectedJsonArray(List<JsonSerializable> beans) {
     StringBuilder jsonBuilder = new StringBuilder();
 
     jsonBuilder.append("[");
@@ -371,5 +375,131 @@ public class JsonSerializationTest extends PluggableProcessEngineTestCase {
     jsonBuilder.append("]");
 
     return jsonBuilder.toString();
+  }
+
+  @Deployment(resources = ONE_TASK_PROCESS)
+  public void testSetJavaOjectNullDeserialized() throws Exception {
+
+    ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+
+    // set null value as "deserialized" object
+    runtimeService.setVariable(instance.getId(), "nullObject",
+        objectValue(null)
+        .serializationDataFormat(JSON_FORMAT_NAME)
+        .create());
+
+    // get null value via untyped api
+    assertNull(runtimeService.getVariable(instance.getId(), "nullObject"));
+
+    // get null via typed api
+    ObjectValue typedValue = runtimeService.getVariableTyped(instance.getId(), "nullObject");
+    assertObjectValueDeserializedNull(typedValue);
+
+  }
+
+  @Deployment(resources = ONE_TASK_PROCESS)
+  public void testSetJavaOjectNullSerialized() throws Exception {
+
+    ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+
+    // set null value as "serialized" object
+    runtimeService.setVariable(instance.getId(), "nullObject",
+        serializedObjectValue()
+        .serializationDataFormat(JSON_FORMAT_NAME)
+        .create()); // Note: no object type name provided
+
+    // get null value via untyped api
+    assertNull(runtimeService.getVariable(instance.getId(), "nullObject"));
+
+    // get null via typed api
+    ObjectValue deserializedTypedValue = runtimeService.getVariableTyped(instance.getId(), "nullObject");
+    assertObjectValueDeserializedNull(deserializedTypedValue);
+
+    ObjectValue serializedTypedValue = runtimeService.getVariableTyped(instance.getId(), "nullObject", false);
+    assertObjectValueSerializedNull(serializedTypedValue);
+  }
+
+  @Deployment(resources = ONE_TASK_PROCESS)
+  public void testSetJavaOjectNullSerializedObjectTypeName() throws Exception {
+
+    ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+
+    String typeName = "some.type.Name";
+
+    // set null value as "serialized" object
+    runtimeService.setVariable(instance.getId(), "nullObject",
+        serializedObjectValue()
+        .serializationDataFormat(JSON_FORMAT_NAME)
+        .objectTypeName(typeName) // This time an objectTypeName is provided
+        .create());
+
+    // get null value via untyped api
+    assertNull(runtimeService.getVariable(instance.getId(), "nullObject"));
+
+    // get null via typed api
+    ObjectValue deserializedTypedValue = runtimeService.getVariableTyped(instance.getId(), "nullObject");
+    assertNotNull(deserializedTypedValue);
+    assertTrue(deserializedTypedValue.isDeserialized());
+    assertEquals(JSON_FORMAT_NAME, deserializedTypedValue.getSerializationDataFormat());
+    assertNull(deserializedTypedValue.getValue());
+    assertNull(deserializedTypedValue.getValueSerialized());
+    assertNull(deserializedTypedValue.getObjectType());
+    assertEquals(typeName, deserializedTypedValue.getObjectTypeName());
+
+    ObjectValue serializedTypedValue = runtimeService.getVariableTyped(instance.getId(), "nullObject", false);
+    assertNotNull(serializedTypedValue);
+    assertFalse(serializedTypedValue.isDeserialized());
+    assertEquals(JSON_FORMAT_NAME, serializedTypedValue.getSerializationDataFormat());
+    assertNull(serializedTypedValue.getValueSerialized());
+    assertEquals(typeName, serializedTypedValue.getObjectTypeName());
+  }
+
+  @Deployment(resources = ONE_TASK_PROCESS)
+  public void testSetUntypedNullForExistingVariable() throws Exception {
+
+    ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+
+    // initially the variable has a value
+    JsonSerializable object = new JsonSerializable();
+
+    runtimeService.setVariable(instance.getId(), "varName",
+        objectValue(object)
+        .serializationDataFormat(JSON_FORMAT_NAME)
+        .create());
+
+    // get value via untyped api
+    assertEquals(object, runtimeService.getVariable(instance.getId(), "varName"));
+
+    // set the variable to null via untyped Api
+    runtimeService.setVariable(instance.getId(), "varName", null);
+
+    // variable is now untyped null
+    TypedValue nullValue = runtimeService.getVariableTyped(instance.getId(), "varName");
+    assertUntypedNullValue(nullValue);
+
+  }
+
+  @Deployment(resources = ONE_TASK_PROCESS)
+  public void testSetTypedNullForExistingVariable() throws Exception {
+
+    ProcessInstance instance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+
+    // initially the variable has a value
+    JsonSerializable javaSerializable = new JsonSerializable();
+
+    runtimeService.setVariable(instance.getId(), "varName",
+        objectValue(javaSerializable)
+        .serializationDataFormat(JSON_FORMAT_NAME)
+        .create());
+
+    // get value via untyped api
+    assertEquals(javaSerializable, runtimeService.getVariable(instance.getId(), "varName"));
+
+    // set the variable to null via typed Api
+    runtimeService.setVariable(instance.getId(), "varName", objectValue(null));
+
+    // variable is still of type object
+    ObjectValue typedValue = runtimeService.getVariableTyped(instance.getId(), "varName");
+    assertObjectValueDeserializedNull(typedValue);
   }
 }

@@ -18,12 +18,7 @@ import org.camunda.bpm.engine.variable.type.ValueType;
 
 /**
  * <p>A {@link TypedValue} is a value with additional type information (the {@link ValueType}).
- * In camunda process engine, TypedValues are used for representing variable values. A variable has
- * a certain name, a value which is of a certain type.</p>
- *
- * <p>Working with typed values:
- *
- * </p>
+ * TypedValues are used for representing variable values.</p>
  *
  * @author Daniel Meyer
  * @since 7.2

@@ -15,7 +15,7 @@
 package org.camunda.bpm.engine.test.variables;
 
 
-public class SimpleBean {
+public class JsonSerializable {
 
   private String stringProperty;
 
@@ -23,11 +23,11 @@ public class SimpleBean {
 
   private boolean booleanProperty;
 
-  public SimpleBean() {
+  public JsonSerializable() {
 
   }
 
-  public SimpleBean(String stringProperty, int intProperty, boolean booleanProperty) {
+  public JsonSerializable(String stringProperty, int intProperty, boolean booleanProperty) {
     this.stringProperty = stringProperty;
     this.intProperty = intProperty;
     this.booleanProperty = booleanProperty;
@@ -93,7 +93,7 @@ public class SimpleBean {
       return false;
     if (getClass() != obj.getClass())
       return false;
-    SimpleBean other = (SimpleBean) obj;
+    JsonSerializable other = (JsonSerializable) obj;
     if (booleanProperty != other.booleanProperty)
       return false;
     if (intProperty != other.intProperty)
