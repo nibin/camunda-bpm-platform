@@ -12,8 +12,9 @@
  */
 package org.camunda.bpm.engine.rest.sub.history.impl;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
@@ -21,8 +22,8 @@ import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.history.HistoricVariableInstanceQuery;
 import org.camunda.bpm.engine.rest.dto.history.HistoricVariableInstanceDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
-import org.camunda.bpm.engine.rest.impl.TypedValueUtil;
 import org.camunda.bpm.engine.rest.sub.history.HistoricVariableInstanceResource;
+import org.camunda.bpm.engine.variable.type.ValueType;
 
 /**
  * @author Daniel Meyer
@@ -53,13 +54,22 @@ public class HistoricVariableInstanceResourceImpl implements HistoricVariableIns
     }
   }
 
-  public Response getBinaryVariable() {
+  public InputStream getBinaryVariable() {
     HistoricVariableInstance variableInstance = baseQuery()
         .disableCustomObjectDeserialization()
         .singleResult();
     if(variableInstance != null) {
-      ResponseBuilder responseBuilder = Response.ok();
-      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableInstance.getTypedValue());
+      if (variableInstance.getTypeName().equals(ValueType.BYTES.getName())) {
+        byte[] valueBytes = (byte[]) variableInstance.getValue();
+        if (valueBytes == null) {
+          valueBytes = new byte[0];
+        }
+
+        return new ByteArrayInputStream(valueBytes);
+      } else {
+        throw new InvalidRequestException(Status.BAD_REQUEST,
+            String.format("Value of variable %s is not a binary value.", variableId));
+      }
 
     } else {
       throw new InvalidRequestException(Status.NOT_FOUND, "Historic variable instance with Id '"+variableId + "' does not exist.");

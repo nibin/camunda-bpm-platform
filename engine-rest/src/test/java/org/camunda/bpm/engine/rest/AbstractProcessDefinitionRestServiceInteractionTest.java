@@ -45,8 +45,10 @@ import org.camunda.bpm.engine.repository.ProcessDefinitionQuery;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
+import org.camunda.bpm.engine.rest.helper.EqualsVariableMap;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
+import org.camunda.bpm.engine.rest.helper.variable.EqualsPrimitiveValue;
 import org.camunda.bpm.engine.rest.sub.repository.impl.ProcessDefinitionResourceImpl;
 import org.camunda.bpm.engine.rest.util.VariablesBuilder;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -396,11 +398,11 @@ public abstract class AbstractProcessDefinitionRestServiceInteractionTest extend
 
     verify(formServiceMock).submitStartForm(eq(MockProvider.EXAMPLE_PROCESS_DEFINITION_ID),
         argThat(
-            new EqualsMap()
-              .matcher("aVariable", equalTo("aStringValue"))
+            new EqualsVariableMap()
+              .matcher("aVariable", EqualsPrimitiveValue.stringValue("aStringValue"))
               .matcher("aSerializedVariable", EqualsObjectValue
                                                 .objectValueMatcher()
-                                                .serializedStringValue(jsonValue)
+                                                .serializedValue(jsonValue)
                                                 .serializationFormat("aFormat")
                                                 .objectTypeName("aRootType"))));
   }

@@ -19,14 +19,14 @@ import java.util.Map.Entry;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.impl.ProcessEngineImpl;
-import org.camunda.bpm.engine.impl.variable.ValueTypeResolver;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
+import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.variable.VariableMap;
 import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.engine.variable.type.PrimitiveValueType;
 import org.camunda.bpm.engine.variable.type.SerializableValueType;
 import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.type.ValueTypeResolver;
 import org.camunda.bpm.engine.variable.value.SerializableValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -68,11 +68,15 @@ public class VariableValueDto {
   }
 
   public TypedValue toTypedValue(ProcessEngine processEngine, ObjectMapper objectMapper) {
-    ValueTypeResolver valueTypeResolver = ((ProcessEngineImpl)processEngine).getProcessEngineConfiguration().getValueTypeResolver();
+    ValueTypeResolver valueTypeResolver = processEngine.getProcessEngineConfiguration().getValueTypeResolver();
+
+    if (type == null) {
+      return Variables.untypedValue(value);
+    }
 
     ValueType valueType = valueTypeResolver.typeForName(fromRestApiTypeName(type));
     if(valueType == null) {
-      return Variables.untypedValue(value);
+      throw new RestException(Status.BAD_REQUEST, String.format("Unsupported value type '%s'", type));
     }
     else {
       if(valueType instanceof PrimitiveValueType) {
@@ -86,13 +90,14 @@ public class VariableValueDto {
             }
             else {
               // use jackson to map the value to the requested java type
-              mappedValue = objectMapper.readValue((String) value, javaType);
+              mappedValue = objectMapper.readValue("\""+value+"\"", javaType);
             }
           }
           return valueType.createValue(mappedValue, valueInfo);
         }
         catch (Exception e) {
-          throw new InvalidRequestException(Status.BAD_REQUEST, "Cannot convert value of type '"+type+"' to java type: "+e.getMessage());
+          throw new InvalidRequestException(Status.BAD_REQUEST, e,
+              String.format("Cannot convert value '%s' of type '%s' to java type %s", value, type, javaType.getName()));
         }
       }
       else if(valueType instanceof SerializableValueType) {

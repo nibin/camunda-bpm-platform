@@ -14,21 +14,14 @@ package org.camunda.bpm.engine.rest.helper.variable;
 
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.TypedValue;
+import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class EqualsTypedValue<S extends EqualsTypedValue<S>> extends ArgumentMatcher<TypedValue> {
-
-  protected ValueType type;
-
-  @SuppressWarnings("unchecked")
-  public S type(ValueType type) {
-    this.type = type;
-    return (S) this;
-  }
+public class EqualsNullValue extends ArgumentMatcher<TypedValue> {
 
   public boolean matches(Object argument) {
     if (argument == null || !TypedValue.class.isAssignableFrom(argument.getClass())) {
@@ -37,12 +30,26 @@ public class EqualsTypedValue<S extends EqualsTypedValue<S>> extends ArgumentMat
 
     TypedValue typedValue = (TypedValue) argument;
 
-    if (type != null &&
-        !type.equals(typedValue.getType())) {
+    if (typedValue.getType() != ValueType.NULL) {
+      return false;
+    }
+
+    if (typedValue.getValue() != null) {
       return false;
     }
 
     return true;
+  }
+
+  public static EqualsNullValue matcher() {
+    return new EqualsNullValue();
+  }
+
+  public void describeTo(Description description) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(this.getClass().getSimpleName());
+
+    description.appendText(sb.toString());
   }
 
 }

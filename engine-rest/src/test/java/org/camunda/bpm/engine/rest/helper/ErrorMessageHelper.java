@@ -10,31 +10,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.rest.sub.history;
-
-import java.io.InputStream;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import org.camunda.bpm.engine.rest.dto.history.HistoricDetailDto;
+package org.camunda.bpm.engine.rest.helper;
 
 /**
+ * @author Thorben Lindhauer
  *
- * @author Daniel Meyer
  */
-public interface HistoricDetailResource {
+public class ErrorMessageHelper {
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  public HistoricDetailDto getDetail();
+  protected static final String EXPECTED_CONVERSION_FAILURE_MESSAGE = "Cannot convert value '%s' of type '%s' to java type %s";
 
-
-  @GET
-  @Path("/data")
-  @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  public InputStream getBinaryVariable();
-
+  public static String getExpectedFailingConversionMessage(Object value, String submittedValueType, Class<?> conversionClass) {
+    return String.format(EXPECTED_CONVERSION_FAILURE_MESSAGE, value, submittedValueType, conversionClass.getName());
+  }
 }

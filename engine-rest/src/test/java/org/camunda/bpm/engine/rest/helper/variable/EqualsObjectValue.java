@@ -16,17 +16,20 @@ import java.io.UnsupportedEncodingException;
 
 import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.ObjectValue;
+import org.hamcrest.Description;
 
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class EqualsObjectValue extends EqualsTypedValue<ObjectValue, EqualsObjectValue> {
+public class EqualsObjectValue extends EqualsTypedValue<EqualsObjectValue> {
 
   protected String serializationFormat;
   protected String objectTypeName;
-  protected byte[] serializedValue;
+  protected String serializedValue;
+  protected Object value;
+  protected boolean isDeserialized = false;
 
   public EqualsObjectValue() {
     this.type = ValueType.OBJECT;
@@ -42,16 +45,17 @@ public class EqualsObjectValue extends EqualsTypedValue<ObjectValue, EqualsObjec
     return this;
   }
 
-  public EqualsObjectValue serializedStringValue(String serializedValue) {
-    try {
-      this.serializedValue = serializedValue.getBytes("UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("Cannot convert string to utf-8");
-    }
+  public EqualsObjectValue value(Object value) {
+    this.value = value;
     return this;
   }
 
-  public EqualsObjectValue serializedValue(byte[] serializedValue) {
+  public EqualsObjectValue isDeserialized() {
+    this.isDeserialized = true;
+    return this;
+  }
+
+  public EqualsObjectValue serializedValue(String serializedValue) {
     this.serializedValue = serializedValue;
     return this;
   }
@@ -67,45 +71,79 @@ public class EqualsObjectValue extends EqualsTypedValue<ObjectValue, EqualsObjec
 
     ObjectValue objectValue = (ObjectValue) argument;
 
-    if (serializationFormat == null) {
-      if (objectValue.getSerializationDataFormat() != null) {
+    if (isDeserialized) {
+      if (!objectValue.isDeserialized()) {
         return false;
       }
+
+      if (value == null) {
+        if (objectValue.getValue() != null) {
+          return false;
+        }
+      } else {
+        if (!value.equals(objectValue.getValue())) {
+          return false;
+        }
+      }
+
     } else {
-      if (!serializationFormat.equals(objectValue.getSerializationDataFormat())) {
+      if (objectValue.isDeserialized()) {
         return false;
+      }
+
+
+      if (serializationFormat == null) {
+        if (objectValue.getSerializationDataFormat() != null) {
+          return false;
+        }
+      } else {
+        if (!serializationFormat.equals(objectValue.getSerializationDataFormat())) {
+          return false;
+        }
+      }
+
+      if (objectTypeName == null) {
+        if (objectValue.getObjectTypeName() != null) {
+          return false;
+        }
+      } else {
+        if (!objectTypeName.equals(objectValue.getObjectTypeName())) {
+          return false;
+        }
+      }
+
+      if (serializedValue == null) {
+        if (objectValue.getValueSerialized() != null) {
+          return false;
+        }
+      } else {
+        if (!serializedValue.equals(objectValue.getValueSerialized())) {
+          return false;
+        }
       }
     }
 
-    if (objectTypeName == null) {
-      if (objectValue.getObjectTypeName() != null) {
-        return false;
-      }
-    } else {
-      if (!objectTypeName.equals(objectValue.getObjectTypeName())) {
-        return false;
-      }
-    }
-
-    if (!objectValue.isDeserialized()) {
-      return false;
-    }
-
-    if (serializedValue == null) {
-      if (objectValue.getValueSerialized() != null) {
-        return false;
-      }
-    } else {
-      if (!serializedValue.equals(objectValue.getValueSerialized())) {
-        return false;
-      }
-    }
 
     return true;
   }
 
   public static EqualsObjectValue objectValueMatcher() {
     return new EqualsObjectValue();
+  }
+
+  public void describeTo(Description description) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(this.getClass().getSimpleName());
+    sb.append(": ");
+    sb.append("serializedValue=");
+    sb.append(serializedValue);
+    sb.append(", objectTypeName=");
+    sb.append(objectTypeName);
+    sb.append(", serializationFormat=");
+    sb.append(serializationFormat);
+    sb.append(", isDeserialized=false");
+
+    description.appendText(sb.toString());
   }
 
 }

@@ -12,14 +12,19 @@
  */
 package org.camunda.bpm.engine.rest.helper.variable;
 
+import java.util.Arrays;
+import java.util.Date;
+
+import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.PrimitiveValue;
+import org.hamcrest.Description;
 
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class EqualsPrimitiveValue extends EqualsTypedValue<PrimitiveValue<?>, EqualsPrimitiveValue> {
+public class EqualsPrimitiveValue extends EqualsTypedValue<EqualsPrimitiveValue> {
 
   protected Object value;
 
@@ -44,7 +49,7 @@ public class EqualsPrimitiveValue extends EqualsTypedValue<PrimitiveValue<?>, Eq
         return false;
       }
     } else {
-      if (!value.equals(primitveValue.getValue())) {
+      if (!matchesValues(primitveValue.getValue())) {
         return false;
       }
     }
@@ -52,8 +57,69 @@ public class EqualsPrimitiveValue extends EqualsTypedValue<PrimitiveValue<?>, Eq
     return true;
   }
 
+  protected boolean matchesValues(Object otherValue) {
+    // explicit matching for byte[]
+    if (value instanceof byte[]) {
+      if (!(otherValue instanceof byte[])) {
+        return false;
+      }
+
+      byte[] byteValue = (byte[]) value;
+      byte[] otherByteValue = (byte[]) otherValue;
+
+      return Arrays.equals(byteValue, otherByteValue);
+    } else {
+      return value.equals(otherValue);
+    }
+
+  }
+
   public static EqualsPrimitiveValue primitiveValueMatcher() {
     return new EqualsPrimitiveValue();
+  }
+
+  public static EqualsPrimitiveValue integerValue(Integer value) {
+    return new EqualsPrimitiveValue().type(ValueType.INTEGER).value(value);
+  }
+
+  public static EqualsPrimitiveValue stringValue(String value) {
+    return new EqualsPrimitiveValue().type(ValueType.STRING).value(value);
+  }
+
+  public static EqualsPrimitiveValue booleanValue(Boolean value) {
+    return new EqualsPrimitiveValue().type(ValueType.BOOLEAN).value(value);
+  }
+
+  public static EqualsPrimitiveValue shortValue(Short value) {
+    return new EqualsPrimitiveValue().type(ValueType.SHORT).value(value);
+  }
+
+  public static EqualsPrimitiveValue doubleValue(Double value) {
+    return new EqualsPrimitiveValue().type(ValueType.DOUBLE).value(value);
+  }
+
+  public static EqualsPrimitiveValue longValue(Long value) {
+    return new EqualsPrimitiveValue().type(ValueType.LONG).value(value);
+  }
+
+  public static EqualsPrimitiveValue bytesValue(byte[] value) {
+    return new EqualsPrimitiveValue().type(ValueType.BYTES).value(value);
+  }
+
+  public static EqualsPrimitiveValue dateValue(Date value) {
+    return new EqualsPrimitiveValue().type(ValueType.DATE).value(value);
+  }
+
+  public void describeTo(Description description) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(this.getClass().getSimpleName());
+    sb.append(": ");
+    sb.append("value=");
+    sb.append(value);
+    sb.append(", type=");
+    sb.append(type);
+
+    description.appendText(sb.toString());
   }
 
 }

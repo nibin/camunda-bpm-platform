@@ -100,13 +100,10 @@ public class ProcessDefinitionResourceImpl implements ProcessDefinitionResource 
       String errorMessage = String.format("Cannot instantiate process definition %s: %s", processDefinitionId, e.getMessage());
       throw new RestException(Status.INTERNAL_SERVER_ERROR, e, errorMessage);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot instantiate process definition %s due to number format exception: %s", processDefinitionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot instantiate process definition %s: %s", processDefinitionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     }
 
     ProcessInstanceDto result = ProcessInstanceDto.fromProcessInstance(instance);
@@ -140,13 +137,10 @@ public class ProcessDefinitionResourceImpl implements ProcessDefinitionResource 
       String errorMessage = String.format("Cannot instantiate process definition %s: %s", processDefinitionId, e.getMessage());
       throw new RestException(Status.INTERNAL_SERVER_ERROR, e, errorMessage);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot instantiate process definition %s due to number format exception: %s", processDefinitionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot instantiate process definition %s: %s", processDefinitionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     }
 
     ProcessInstanceDto result = ProcessInstanceDto.fromProcessInstance(instance);

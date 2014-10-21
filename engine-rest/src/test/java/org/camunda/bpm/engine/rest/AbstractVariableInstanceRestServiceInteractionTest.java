@@ -31,6 +31,7 @@ import org.camunda.bpm.engine.rest.helper.MockVariableInstanceBuilder;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
 import org.camunda.bpm.engine.variable.Variables;
+import org.camunda.bpm.engine.variable.type.ValueType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,10 +91,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     .when().get(VARIABLE_INSTANCE_URL);
 
     verify(variableInstanceQueryMock, times(1)).disableBinaryFetching();
-    // requirement to not break existing API; should be:
-    // verify(variableInstanceQueryMock).disableCustomObjectDeserialization();
-    verify(variableInstanceQueryMock, never()).disableObjectValueDeserialization();
-
+    verify(variableInstanceQueryMock, times(1)).disableObjectValueDeserialization();
   }
 
   @Test
@@ -112,7 +110,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     given().pathParam("id", MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID)
     .then().expect().statusCode(Status.OK.getStatusCode())
     .and()
-      .body("type", equalTo("byte[]"))
+      .body("type", equalTo(ValueType.BYTES.getName()))
       .body("value", nullValue())
     .when().get(VARIABLE_INSTANCE_URL);
 
@@ -136,9 +134,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     .when().get(VARIABLE_INSTANCE_URL);
 
     verify(variableInstanceQueryMock, times(1)).disableBinaryFetching();
-    // requirement to not break existing API; should be:
-    // verify(mockedQuery).disableCustomObjectDeserialization();
-    verify(variableInstanceQueryMock, never()).disableObjectValueDeserialization();
+    verify(variableInstanceQueryMock, times(1)).disableObjectValueDeserialization();
 
   }
 
@@ -169,33 +165,6 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
   }
 
   @Test
-  public void testBinaryDataForSerializableVariable() {
-    String serializedValue = "some bytes";
-
-    VariableInstance variableInstanceMock =
-        MockProvider.mockVariableInstance()
-          .typedValue(Variables.serializedObjectValue(serializedValue)
-              .serializationDataFormat(JavaObjectSerializer.SERIALIZATION_DATA_FORMAT).create())
-          .build();
-
-    when(variableInstanceQueryMock.variableId(variableInstanceMock.getId())).thenReturn(variableInstanceQueryMock);
-    when(variableInstanceQueryMock.disableObjectValueDeserialization()).thenReturn(variableInstanceQueryMock);
-    when(variableInstanceQueryMock.singleResult()).thenReturn(variableInstanceMock);
-
-    Response response = given().pathParam("id", MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID)
-    .then().expect()
-      .statusCode(Status.OK.getStatusCode())
-      .contentType(ContentType.BINARY.toString())
-    .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
-
-    byte[] responseBytes = response.getBody().asByteArray();
-    Assert.assertEquals(serializedValue, new String(responseBytes));
-    verify(variableInstanceQueryMock, never()).disableBinaryFetching();
-    verify(variableInstanceQueryMock).disableObjectValueDeserialization();
-
-  }
-
-  @Test
   public void testBinaryDataForNonBinaryVariable() {
     VariableInstance variableInstanceMock = MockProvider.createMockVariableInstance();
 
@@ -206,7 +175,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     given().pathParam("id", MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
-      .body(containsString("Variable instance with Id '"+variableInstanceMock.getId()+"' is not a binary variable"))
+      .body(containsString("Value of variable aVariableInstanceId is not a binary value"))
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     verify(variableInstanceQueryMock, never()).disableBinaryFetching();

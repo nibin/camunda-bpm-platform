@@ -151,13 +151,10 @@ public class CaseInstanceResourceImpl implements CaseInstanceResource {
           commandBuilder.setVariable(variableName, variableValue.toTypedValue(engine, objectMapper));
         }
 
-      } catch (NumberFormatException e) {
-        String errorMessage = String.format("Cannot %s case instance %s due to number format exception of variable %s: %s", transition, caseInstanceId, variableName, e.getMessage());
-        throw new RestException(Status.BAD_REQUEST, e, errorMessage);
+      } catch (RestException e) {
+        String errorMessage = String.format("Cannot %s case instance %s due to invalid variable %s: %s", transition, caseInstanceId, variableName, e.getMessage());
+        throw new RestException(e.getStatus(), e, errorMessage);
 
-      } catch (IllegalArgumentException e) {
-        String errorMessage = String.format("Cannot %s case instance %s because of variable %s: %s", transition, variableName, variableName, e.getMessage());
-        throw new RestException(Status.BAD_REQUEST, errorMessage);
       }
     }
   }

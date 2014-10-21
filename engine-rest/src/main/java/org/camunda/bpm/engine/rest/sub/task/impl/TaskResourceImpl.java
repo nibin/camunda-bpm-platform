@@ -77,13 +77,9 @@ public class TaskResourceImpl implements TaskResource {
       VariableMap variables = VariableValueDto.toMap(dto.getVariables(), engine, objectMapper);
       taskService.complete(taskId, variables);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot complete task %s due to number format exception: %s", taskId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot complete task %s: %s", taskId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
 
     } catch (ProcessEngineException e) {
       String errorMessage = String.format("Cannot complete task %s: %s", taskId, e.getMessage());
@@ -98,13 +94,9 @@ public class TaskResourceImpl implements TaskResource {
       VariableMap variables = VariableValueDto.toMap(dto.getVariables(), engine, objectMapper);
       formService.submitTaskForm(taskId, variables);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot submit task form %s due to number format exception: %s", taskId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot submit task form %s: %s", taskId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
 
     } catch (ProcessEngineException e) {
       String errorMessage = String.format("Cannot submit task form %s: %s", taskId, e.getMessage());
@@ -180,13 +172,10 @@ public class TaskResourceImpl implements TaskResource {
       VariableMap variables = VariableValueDto.toMap(dto.getVariables(), engine, objectMapper);
       taskService.resolveTask(taskId, variables);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot resolve task %s due to number format exception: %s", taskId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot resolve task %s: %s", taskId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     }
 
   }

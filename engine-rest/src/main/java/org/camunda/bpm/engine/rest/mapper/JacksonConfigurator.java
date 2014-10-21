@@ -13,16 +13,20 @@
 package org.camunda.bpm.engine.rest.mapper;
 
 import java.text.SimpleDateFormat;
+
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.Provider;
 
 import org.camunda.bpm.engine.rest.hal.Hal;
+import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.omg.CORBA.OBJECT_NOT_EXIST;
+
+import com.jayway.restassured.path.json.config.JsonParserType;
 
 @Provider
 @Produces({MediaType.APPLICATION_JSON, Hal.MEDIA_TYPE_HAL})

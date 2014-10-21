@@ -18,6 +18,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public class VariableQueryParameterDto extends ConditionQueryParameterDto {
 
+  public VariableQueryParameterDto() {
+
+  }
+
   public VariableQueryParameterDto(ObjectMapper objectMapper) {
     super(objectMapper);
   }

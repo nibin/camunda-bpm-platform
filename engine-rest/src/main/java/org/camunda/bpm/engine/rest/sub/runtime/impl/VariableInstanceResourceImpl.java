@@ -12,17 +12,18 @@
  */
 package org.camunda.bpm.engine.rest.sub.runtime.impl;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.dto.runtime.VariableInstanceDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
-import org.camunda.bpm.engine.rest.impl.TypedValueUtil;
 import org.camunda.bpm.engine.rest.sub.runtime.VariableInstanceResource;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
+import org.camunda.bpm.engine.variable.type.ValueType;
 
 /**
  * @author Daniel Meyer
@@ -59,16 +60,23 @@ public class VariableInstanceResourceImpl implements VariableInstanceResource {
     }
   }
 
-  public Response getBinaryVariable() {
-
-    ResponseBuilder responseBuilder = Response.ok();
+  public InputStream getBinaryVariable() {
 
     VariableInstance variableInstance = baseQuery()
-      .disableObjectValueDeserialization()
-      .singleResult();
+        .disableObjectValueDeserialization()
+        .singleResult();
     if(variableInstance != null) {
+      if (variableInstance.getTypeName().equals(ValueType.BYTES.getName())) {
+        byte[] valueBytes = (byte[]) variableInstance.getValue();
+        if (valueBytes == null) {
+          valueBytes = new byte[0];
+        }
 
-      return TypedValueUtil.writeBinaryValueToResponse(responseBuilder, variableInstance.getTypedValue(), engine);
+        return new ByteArrayInputStream(valueBytes);
+      } else {
+        throw new InvalidRequestException(Status.BAD_REQUEST,
+            String.format("Value of variable %s is not a binary value.", variableId));
+      }
 
     } else {
       throw new InvalidRequestException(Status.NOT_FOUND, "Variable instance with Id '"+variableId + "' does not exist.");

@@ -20,6 +20,7 @@ import javax.ws.rs.ext.Providers;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.spi.impl.AbstractProcessEngineAware;
+import org.camunda.bpm.engine.rest.util.ProvidersUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 
 public abstract class AbstractRestProcessEngineAware extends AbstractProcessEngineAware {
@@ -59,7 +60,8 @@ public abstract class AbstractRestProcessEngineAware extends AbstractProcessEngi
 
   protected ObjectMapper getObjectMapper() {
     if (objectMapper == null) {
-      objectMapper = providers.getContextResolver(ObjectMapper.class, MediaType.APPLICATION_JSON_TYPE).getContext(this.getClass());
+      objectMapper = ProvidersUtil
+          .resolveFromContext(providers, ObjectMapper.class, MediaType.APPLICATION_JSON_TYPE, this.getClass());
     }
 
     return objectMapper;

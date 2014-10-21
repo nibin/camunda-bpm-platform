@@ -70,16 +70,13 @@ public class MessageRestServiceImpl extends AbstractRestProcessEngineAware imple
         correlation.correlateAll();
       }
 
+    } catch (RestException e) {
+      String errorMessage = String.format("Cannot deliver message: %s", e.getMessage());
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     } catch (MismatchingMessageCorrelationException e) {
       throw new RestException(Status.BAD_REQUEST, e);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot deliver a message due to number format exception: %s", e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
-      String errorMessage = String.format("Cannot deliver a message: %s", e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
     }
 
   }

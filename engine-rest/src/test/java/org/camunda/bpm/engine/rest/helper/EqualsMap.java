@@ -43,7 +43,7 @@ public class EqualsMap extends ArgumentMatcher<Map<String, Object>> {
     }
   }
 
-  public boolean matchesExactly(Object argument) {
+  protected boolean matchesExactly(Object argument) {
     if (argument == null) {
       return false;
     }
@@ -56,7 +56,7 @@ public class EqualsMap extends ArgumentMatcher<Map<String, Object>> {
     return setToCompare.equals(argumentSet);
   }
 
-  public boolean matchesMatchers(Object argument) {
+  protected boolean matchesMatchers(Object argument) {
     if (argument == null) {
       return false;
     }

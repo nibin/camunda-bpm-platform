@@ -68,16 +68,13 @@ public class MessageEventSubscriptionResource implements EventSubscriptionResour
       runtimeService.messageEventReceived(messageName, executionId, variables);
 
     } catch (ProcessEngineException e) {
-      throw new RestException(Status.INTERNAL_SERVER_ERROR, e, "Cannot trigger message " + messageName +
-          " for execution " + executionId + ": " + e.getMessage());
+      throw new RestException(Status.INTERNAL_SERVER_ERROR, e, String.format("Cannot trigger message %s for execution %s: %s",
+        messageName, executionId, e.getMessage()));
 
-    } catch (NumberFormatException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot trigger message %s for execution %s: %s", messageName, executionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
 
-    } catch (IllegalArgumentException e) {
-      String errorMessage = String.format("Cannot trigger message %s: %s", messageName, executionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
     }
 
   }

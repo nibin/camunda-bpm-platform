@@ -49,6 +49,7 @@ import org.camunda.bpm.engine.rest.exception.RestException;
 import org.camunda.bpm.engine.rest.history.HistoryRestService;
 import org.camunda.bpm.engine.rest.impl.history.HistoryRestServiceImpl;
 import org.camunda.bpm.engine.rest.spi.ProcessEngineProvider;
+import org.camunda.bpm.engine.rest.util.ProvidersUtil;
 import org.codehaus.jackson.map.ObjectMapper;
 
 public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
@@ -236,7 +237,8 @@ public class ProcessEngineRestServiceImpl implements ProcessEngineRestService {
   }
 
   protected ObjectMapper getObjectMapper() {
-    return providers.getContextResolver(ObjectMapper.class, MediaType.APPLICATION_JSON_TYPE).getContext(this.getClass());
+    return ProvidersUtil
+        .resolveFromContext(providers, ObjectMapper.class, MediaType.APPLICATION_JSON_TYPE, this.getClass());
   }
 
 }

@@ -211,7 +211,7 @@ import org.camunda.bpm.engine.impl.scripting.env.ScriptingEnvironment;
 import org.camunda.bpm.engine.impl.spin.ProcessEngineSpinSupport;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
-import org.camunda.bpm.engine.impl.variable.ValueTypeResolver;
+import org.camunda.bpm.engine.impl.variable.ValueTypeResolverImpl;
 import org.camunda.bpm.engine.impl.variable.serializer.BooleanValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.ByteArrayValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.DateValueSerializer;
@@ -337,7 +337,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected List<TypedValueSerializer> customPreVariableSerializers;
   protected List<TypedValueSerializer> customPostVariableSerializers;
   protected VariableSerializers variableSerializers;
-  protected ValueTypeResolver valueTypeResolver;
   protected String defaultSerializationFormat = JavaObjectSerializer.SERIALIZATION_DATA_FORMAT;
   protected String defaultCharsetName = null;
   protected Charset defaultCharset = null;
@@ -1166,7 +1165,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   protected void initValueTypeResolver() {
     if(valueTypeResolver == null) {
-      valueTypeResolver = new ValueTypeResolver();
+      valueTypeResolver = new ValueTypeResolverImpl();
     }
   }
 
@@ -2490,15 +2489,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public ProcessEngineConfigurationImpl setDefaultSerializationFormat(String defaultSerializationFormat) {
     this.defaultSerializationFormat = defaultSerializationFormat;
-    return this;
-  }
-
-  public ValueTypeResolver getValueTypeResolver() {
-    return valueTypeResolver;
-  }
-
-  public ProcessEngineConfigurationImpl setValueTypeResolver(ValueTypeResolver valueTypeResolver) {
-    this.valueTypeResolver = valueTypeResolver;
     return this;
   }
 

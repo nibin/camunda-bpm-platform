@@ -263,7 +263,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
           .body("[0].id", equalTo(mockInstanceBuilder.getId()))
           .body("[0].name", equalTo(mockInstanceBuilder.getName()))
           .body("[0].type", equalTo(mockInstanceBuilder.getTypeName()))
-          .body("[0].value", equalTo(mockInstanceBuilder.getTypedValue()))
+          .body("[0].value", equalTo(mockInstanceBuilder.getTypedValue().getValue()))
           .body("[0].processInstanceId", equalTo(mockInstanceBuilder.getProcessInstanceId()))
           .body("[0].executionId", equalTo(mockInstanceBuilder.getExecutionId()))
           .body("[0].caseInstanceId", equalTo(mockInstanceBuilder.getCaseInstanceId()))

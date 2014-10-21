@@ -20,13 +20,12 @@ import static org.camunda.bpm.engine.authorization.Resources.FILTER;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Providers;
 
 import org.camunda.bpm.engine.EntityTypes;
 import org.camunda.bpm.engine.FilterService;
@@ -60,8 +59,8 @@ public class FilterRestServiceImpl extends AbstractAuthorizedRestResource implem
     super(engineName, FILTER, ANY, objectMapper);
   }
 
-  public FilterResource getFilter(Providers providers, String filterId) {
-    return new FilterResourceImpl(getProcessEngine().getName(), getObjectMapper(providers), filterId, relativeRootResourcePath);
+  public FilterResource getFilter(String filterId) {
+    return new FilterResourceImpl(getProcessEngine().getName(), getObjectMapper(), filterId, relativeRootResourcePath);
   }
 
   public List<FilterDto> getFilters(UriInfo uriInfo, Boolean itemCount, Integer firstResult, Integer maxResults) {
@@ -161,13 +160,6 @@ public class FilterRestServiceImpl extends AbstractAuthorizedRestResource implem
     }
 
     return resourceOptionsDto;
-  }
-
-  protected ObjectMapper getObjectMapper(Providers providers) {
-    if (objectMapper == null) {
-      objectMapper = providers.getContextResolver(ObjectMapper.class, MediaType.APPLICATION_JSON_TYPE).getContext(null);
-    }
-    return objectMapper;
   }
 
 }

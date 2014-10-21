@@ -12,12 +12,22 @@
  */
 package org.camunda.bpm.engine.impl.variable;
 
+import static org.camunda.bpm.engine.variable.type.ValueType.BOOLEAN;
+import static org.camunda.bpm.engine.variable.type.ValueType.BYTES;
+import static org.camunda.bpm.engine.variable.type.ValueType.DATE;
+import static org.camunda.bpm.engine.variable.type.ValueType.DOUBLE;
+import static org.camunda.bpm.engine.variable.type.ValueType.INTEGER;
+import static org.camunda.bpm.engine.variable.type.ValueType.LONG;
+import static org.camunda.bpm.engine.variable.type.ValueType.NULL;
+import static org.camunda.bpm.engine.variable.type.ValueType.OBJECT;
+import static org.camunda.bpm.engine.variable.type.ValueType.SHORT;
+import static org.camunda.bpm.engine.variable.type.ValueType.STRING;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.bpm.engine.variable.type.ValueType.*;
-
 import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.type.ValueTypeResolver;
 
 /**
  * Resolves ValueType by name.
@@ -25,11 +35,11 @@ import org.camunda.bpm.engine.variable.type.ValueType;
  * @author Daniel Meyer
  *
  */
-public class ValueTypeResolver {
+public class ValueTypeResolverImpl implements ValueTypeResolver {
 
   protected Map<String, ValueType> knownTypes = new HashMap<String, ValueType>();
 
-  public ValueTypeResolver() {
+  public ValueTypeResolverImpl() {
     addType(BOOLEAN);
     addType(BYTES);
     addType(DATE);

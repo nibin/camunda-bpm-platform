@@ -98,14 +98,14 @@ public class VariablesBuilder {
     }
 
     if (variableType != null) {
-      serializedVariable.put("variableType", variableType);
+      serializedVariable.put("type", variableType);
     }
 
     Map<String, Object> typeInfo = new HashMap<String, Object>();
     typeInfo.put(ObjectTypeImpl.VALUE_INFO_SERIALIZATION_DATA_FORMAT, serializationFormat);
     typeInfo.put(ObjectTypeImpl.VALUE_INFO_OBJECT_TYPE_NAME, objectTypeName);
 
-    serializedVariable.put("serializationConfig", typeInfo);
+    serializedVariable.put("valueInfo", typeInfo);
 
     return serializedVariable;
   }

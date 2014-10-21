@@ -60,16 +60,13 @@ public class ExecutionResourceImpl implements ExecutionResource {
       VariableMap variables = VariableValueDto.toMap(triggerDto.getVariables(), engine, objectMapper);
       runtimeService.signal(executionId, variables);
 
+    } catch (RestException e) {
+      String errorMessage = String.format("Cannot signal execution %s: %s", executionId, e.getMessage());
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     } catch (ProcessEngineException e) {
       throw new RestException(Status.INTERNAL_SERVER_ERROR, e, "Cannot signal execution " + executionId + ": " + e.getMessage());
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot signal execution %s due to number format exception: %s", executionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
-      String errorMessage = String.format("Cannot signal execution %s: %s", executionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
     }
   }
 

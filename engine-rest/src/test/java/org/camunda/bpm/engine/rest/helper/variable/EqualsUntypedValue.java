@@ -12,22 +12,21 @@
  */
 package org.camunda.bpm.engine.rest.helper.variable;
 
-import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.TypedValue;
+import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class EqualsTypedValue<S extends EqualsTypedValue<S>> extends ArgumentMatcher<TypedValue> {
+public class EqualsUntypedValue extends ArgumentMatcher<TypedValue> {
 
-  protected ValueType type;
+  protected Object value;
 
-  @SuppressWarnings("unchecked")
-  public S type(ValueType type) {
-    this.type = type;
-    return (S) this;
+  public EqualsUntypedValue value(Object value) {
+    this.value = value;
+    return this;
   }
 
   public boolean matches(Object argument) {
@@ -37,12 +36,35 @@ public class EqualsTypedValue<S extends EqualsTypedValue<S>> extends ArgumentMat
 
     TypedValue typedValue = (TypedValue) argument;
 
-    if (type != null &&
-        !type.equals(typedValue.getType())) {
+    if (typedValue.getType() != null) {
       return false;
     }
 
+    if (value == null) {
+      if (typedValue.getValue() != null) {
+        return false;
+      }
+    } else {
+      if (!value.equals(typedValue.getValue())) {
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  public static EqualsUntypedValue matcher() {
+    return new EqualsUntypedValue();
+  }
+
+  public void describeTo(Description description) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(this.getClass().getSimpleName());
+    sb.append(": ");
+    sb.append("value=");
+    sb.append(value);
+
+    description.appendText(sb.toString());
   }
 
 }

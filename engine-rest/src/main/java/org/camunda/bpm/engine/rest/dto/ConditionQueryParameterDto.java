@@ -26,6 +26,10 @@ public class ConditionQueryParameterDto {
 
   protected ObjectMapper objectMapper;
 
+  public ConditionQueryParameterDto() {
+
+  }
+
   public ConditionQueryParameterDto(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
@@ -71,7 +75,7 @@ public class ConditionQueryParameterDto {
     return value;
   }
   public void setValue(Object value) {
-    if (value instanceof String) {
+    if (value instanceof String && objectMapper != null) {
       try {
         this.value = objectMapper.readValue((String) value, Date.class);
       } catch (Exception e) {

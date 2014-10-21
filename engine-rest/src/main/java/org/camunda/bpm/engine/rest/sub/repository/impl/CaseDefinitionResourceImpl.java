@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.rest.sub.repository.impl;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
@@ -124,6 +125,10 @@ public class CaseDefinitionResourceImpl implements CaseDefinitionResource {
           .setVariables(variables)
           .create();
 
+    } catch (RestException e) {
+      String errorMessage = String.format("Cannot instantiate case definition %s: %s", caseDefinitionId, e.getMessage());
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     } catch (NotFoundException e) {
       String errorMessage = String.format("Cannot instantiate case definition %s: %s", caseDefinitionId, e.getMessage());
       throw new InvalidRequestException(Status.NOT_FOUND, e, errorMessage);
@@ -140,13 +145,6 @@ public class CaseDefinitionResourceImpl implements CaseDefinitionResource {
       String errorMessage = String.format("Cannot instantiate case definition %s: %s", caseDefinitionId, e.getMessage());
       throw new RestException(Status.INTERNAL_SERVER_ERROR, e, errorMessage);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot instantiate case definition %s due to number format exception: %s", caseDefinitionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
-      String errorMessage = String.format("Cannot instantiate case definition %s: %s", caseDefinitionId, e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
     }
 
     CaseInstanceDto result = CaseInstanceDto.fromCaseInstance(instance);

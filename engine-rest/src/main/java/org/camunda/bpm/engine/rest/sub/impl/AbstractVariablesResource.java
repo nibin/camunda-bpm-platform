@@ -89,6 +89,9 @@ public abstract class AbstractVariablesResource implements VariableResource {
       TypedValue typedValue = variable.toTypedValue(engine, objectMapper);
       setVariableEntity(variableName, typedValue);
 
+    } catch (RestException e) {
+      throw new InvalidRequestException(e.getStatus(), e,
+        String.format("Cannot put %s variable %s: %s", getResourceTypeName(), variableName, e.getMessage()));
     } catch (BadUserRequestException e) {
       throw new RestException(Status.BAD_REQUEST, e,
         String.format("Cannot put %s variable %s: %s", getResourceTypeName(), variableName, e.getMessage()));
@@ -112,7 +115,6 @@ public abstract class AbstractVariablesResource implements VariableResource {
         object = deserializeJsonObject(valueTypePart.getTextContent(), dataPart.getBinaryContent());
 
       } else {
-        // TODO: also support java de-serialization as byte stream?
         throw new InvalidRequestException(Status.BAD_REQUEST, "Unrecognized content type for serialized java type: "+dataPart.getContentType());
       }
 
@@ -158,13 +160,10 @@ public abstract class AbstractVariablesResource implements VariableResource {
     try {
       variableModifications = VariableValueDto.toMap(patch.getModifications(), engine, objectMapper);
 
-    } catch (NumberFormatException e) {
-      String errorMessage = String.format("Cannot modify variables for %s due to number format exception: %s", getResourceTypeName(), e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, e, errorMessage);
-
-    } catch (IllegalArgumentException e) {
+    } catch (RestException e) {
       String errorMessage = String.format("Cannot modify variables for %s: %s", getResourceTypeName(), e.getMessage());
-      throw new RestException(Status.BAD_REQUEST, errorMessage);
+      throw new InvalidRequestException(e.getStatus(), e, errorMessage);
+
     }
 
     List<String> variableDeletions = patch.getDeletions();

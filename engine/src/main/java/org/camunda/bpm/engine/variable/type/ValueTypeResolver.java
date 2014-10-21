@@ -10,31 +10,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.rest.sub.history;
-
-import java.io.InputStream;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import org.camunda.bpm.engine.rest.dto.history.HistoricDetailDto;
+package org.camunda.bpm.engine.variable.type;
 
 /**
- *
- * @author Daniel Meyer
+ * @author Thorben Lindhauer
  */
-public interface HistoricDetailResource {
+public interface ValueTypeResolver {
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  public HistoricDetailDto getDetail();
-
-
-  @GET
-  @Path("/data")
-  @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  public InputStream getBinaryVariable();
-
+  ValueType typeForName(String typeName);
 }

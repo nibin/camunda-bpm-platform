@@ -12,12 +12,14 @@
  */
 package org.camunda.bpm.engine.rest.sub.runtime;
 
+import java.io.InputStream;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
 import org.camunda.bpm.engine.rest.dto.runtime.VariableInstanceDto;
 
 /**
@@ -33,6 +35,7 @@ public interface VariableInstanceResource {
 
   @GET
   @Path("/data")
-  public Response getBinaryVariable();
+  @Produces(MediaType.APPLICATION_OCTET_STREAM)
+  public InputStream getBinaryVariable();
 
 }
