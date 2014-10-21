@@ -30,8 +30,8 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.impl.test.TestHelper;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
-import org.junit.rules.TestWatchman;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 
 /** Convenience for ProcessEngine and services initialization in the form of a JUnit rule.
@@ -40,14 +40,14 @@ import org.junit.runners.model.FrameworkMethod;
  * <pre>public class YourTest {
  *
  *   &#64;Rule
- *   public ProcessEngineRule activitiRule = new ProcessEngineRule();
+ *   public ProcessEngineRule processEngineRule = new ProcessEngineRule();
  *
  *   ...
  * }
  * </pre>
  *
  * <p>The ProcessEngine and the services will be made available to the test class
- * through the getters of the activitiRule.
+ * through the getters of the processEngineRule.
  * The processEngine will be initialized by default with the camunda.cfg.xml resource
  * on the classpath.  To specify a different configuration file, pass the
  * resource location in {@link #ProcessEngineRule(String) the appropriate constructor}.
@@ -60,7 +60,7 @@ import org.junit.runners.model.FrameworkMethod;
  * after the tearDown.
  * </p>
  *
- * <p>The activitiRule also lets you {@link ProcessEngineRule#setCurrentTime(Date) set the current time used by the
+ * <p>The processEngineRule also lets you {@link ProcessEngineRule#setCurrentTime(Date) set the current time used by the
  * process engine}. This can be handy to control the exact time that is used by the engine
  * in order to verify e.g. e.g. due dates of timers.  Or start, end and duration times
  * in the history service.  In the tearDown, the internal clock will automatically be
@@ -70,7 +70,7 @@ import org.junit.runners.model.FrameworkMethod;
  *
  * @author Tom Baeyens
  */
-public class ProcessEngineRule extends TestWatchman {
+public class ProcessEngineRule extends TestWatcher {
 
   protected String configurationResource = "camunda.cfg.xml";
   protected String configurationResourceCompat = "activiti.cfg.xml";
@@ -100,14 +100,14 @@ public class ProcessEngineRule extends TestWatchman {
   }
 
   @Override
-  public void starting(FrameworkMethod method) {
+  public void starting(Description description) {
     if (processEngine==null) {
       initializeProcessEngine();
     }
 
     initializeServices();
 
-    deploymentId = TestHelper.annotationDeploymentSetUp(processEngine, method.getMethod().getDeclaringClass(), method.getName());
+    deploymentId = TestHelper.annotationDeploymentSetUp(processEngine, description.getTestClass(), description.getMethodName());
   }
 
   protected void initializeProcessEngine() {
@@ -138,8 +138,8 @@ public class ProcessEngineRule extends TestWatchman {
   }
 
   @Override
-  public void finished(FrameworkMethod method) {
-    TestHelper.annotationDeploymentTearDown(processEngine, deploymentId, method.getMethod().getDeclaringClass(), method.getName());
+  public void finished(Description description) {
+    TestHelper.annotationDeploymentTearDown(processEngine, deploymentId, description.getTestClass(), description.getMethodName());
 
     ClockUtil.reset();
   }

@@ -16,12 +16,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.delegate.BpmnError;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.impl.util.CollectionUtil;
+import org.camunda.bpm.engine.runtime.EventSubscription;
+import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
 
@@ -168,8 +171,8 @@ public class BoundaryErrorEventTest extends PluggableProcessEngineTestCase {
     assertProcessEnded(procId);
 
     HistoricProcessInstance hip;
-    int historyLevel = processEngineConfiguration.getHistoryLevel();
-    if (historyLevel>ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE) {
+    int historyLevel = processEngineConfiguration.getHistoryLevel().getId();
+    if (historyLevel> ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE) {
       hip = historyService.createHistoricProcessInstanceQuery().processInstanceId(procId).singleResult();
       assertEquals("processEnd1", hip.getEndActivityId());
     }
@@ -178,7 +181,7 @@ public class BoundaryErrorEventTest extends PluggableProcessEngineTestCase {
             CollectionUtil.singletonMap("input", 1)).getId();
     assertProcessEnded(procId);
 
-    if (historyLevel>ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE) {
+    if (historyLevel> ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE) {
       hip = historyService.createHistoricProcessInstanceQuery().processInstanceId(procId).singleResult();
       assertEquals("processEnd1", hip.getEndActivityId());
     }
@@ -534,4 +537,50 @@ public class BoundaryErrorEventTest extends PluggableProcessEngineTestCase {
       assertEquals("couldn't execute activity <serviceTask id=\"serviceTask\" ...>: Business Exception", e.getMessage());
     }
   }
+
+  @Deployment
+  public void testCatchErrorOnSubprocessThrownByNonInterruptingEventSubprocess() {
+    runtimeService.startProcessInstanceByKey("testProcess");
+    EventSubscription messageSubscription = runtimeService.createEventSubscriptionQuery().singleResult();
+    runtimeService.messageEventReceived("message", messageSubscription.getExecutionId());
+
+    // should successfully have reached the task following the boundary event
+    Execution taskExecution = runtimeService.createExecutionQuery().activityId("afterBoundaryTask").singleResult();
+    assertNotNull(taskExecution);
+    Task task = taskService.createTaskQuery().executionId(taskExecution.getId()).singleResult();
+    assertNotNull(task);
+  }
+
+  @Deployment
+  public void testCatchErrorOnSubprocessThrownByInterruptingEventSubprocess() {
+    runtimeService.startProcessInstanceByKey("testProcess");
+    EventSubscription messageSubscription = runtimeService.createEventSubscriptionQuery().singleResult();
+    runtimeService.messageEventReceived("message", messageSubscription.getExecutionId());
+
+    // should successfully have reached the task following the boundary event
+    Execution taskExecution = runtimeService.createExecutionQuery().activityId("afterBoundaryTask").singleResult();
+    assertNotNull(taskExecution);
+    Task task = taskService.createTaskQuery().executionId(taskExecution.getId()).singleResult();
+    assertNotNull(task);
+  }
+
+  @Deployment
+  public void testCatchErrorOnSubprocessThrownByNestedEventSubprocess() {
+    runtimeService.startProcessInstanceByKey("testProcess");
+
+    // trigger outer event subprocess
+    EventSubscription messageSubscription = runtimeService.createEventSubscriptionQuery().singleResult();
+    runtimeService.messageEventReceived("outerMessage", messageSubscription.getExecutionId());
+
+    // trigger inner event subprocess
+    messageSubscription = runtimeService.createEventSubscriptionQuery().singleResult();
+    runtimeService.messageEventReceived("innerMessage", messageSubscription.getExecutionId());
+
+    // should successfully have reached the task following the boundary event
+    Execution taskExecution = runtimeService.createExecutionQuery().activityId("afterBoundaryTask").singleResult();
+    assertNotNull(taskExecution);
+    Task task = taskService.createTaskQuery().executionId(taskExecution.getId()).singleResult();
+    assertNotNull(task);
+  }
+
 }

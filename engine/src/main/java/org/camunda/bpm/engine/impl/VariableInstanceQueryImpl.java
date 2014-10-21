@@ -37,12 +37,14 @@ public class VariableInstanceQueryImpl extends AbstractVariableQueryImpl<Variabl
 
   protected String variableId;
   protected String variableName;
+  protected String[] variableNames;
   protected String variableNameLike;
   protected String[] executionIds;
   protected String[] processInstanceIds;
   protected String[] caseExecutionIds;
   protected String[] caseInstanceIds;
   protected String[] taskIds;
+  protected String[] variableScopeIds;
   protected String[] activityInstanceIds;
 
   protected boolean isByteArrayFetchingEnabled = true;
@@ -62,6 +64,11 @@ public class VariableInstanceQueryImpl extends AbstractVariableQueryImpl<Variabl
 
   public VariableInstanceQuery variableName(String variableName) {
     this.variableName = variableName;
+    return this;
+  }
+
+  public VariableInstanceQuery variableNameIn(String... variableNames) {
+    this.variableNames = variableNames;
     return this;
   }
 
@@ -92,6 +99,11 @@ public class VariableInstanceQueryImpl extends AbstractVariableQueryImpl<Variabl
 
   public VariableInstanceQuery taskIdIn(String... taskIds) {
     this.taskIds = taskIds;
+    return this;
+  }
+
+  public VariableInstanceQuery variableScopeIdIn(String... variableScopeIds) {
+    this.variableScopeIds = variableScopeIds;
     return this;
   }
 
@@ -182,6 +194,10 @@ public class VariableInstanceQueryImpl extends AbstractVariableQueryImpl<Variabl
     return variableName;
   }
 
+  public String[] getVariableNames() {
+    return variableNames;
+  }
+
   public String getVariableNameLike() {
     return variableNameLike;
   }
@@ -204,6 +220,10 @@ public class VariableInstanceQueryImpl extends AbstractVariableQueryImpl<Variabl
 
   public String[] getTaskIds() {
     return taskIds;
+  }
+
+  public String[] getVariableScopeIds() {
+    return variableScopeIds;
   }
 
   public String[] getActivityInstanceIds() {

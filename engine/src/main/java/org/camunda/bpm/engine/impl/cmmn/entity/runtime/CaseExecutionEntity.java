@@ -66,7 +66,7 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
 
   /** nested case sentry parts */
   protected List<CaseSentryPartEntity> caseSentryParts;
-  protected Map<String, List<CaseSentryPartEntity>> sentries;
+  protected Map<String, List<CmmnSentryPart>> sentries;
 
   /** reference to a sub process instance, not-null if currently subprocess is started from this execution */
   protected transient ExecutionEntity subProcessInstance;
@@ -88,8 +88,6 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
   protected String caseInstanceId;
   protected String parentId;
   protected String superCaseExecutionId;
-
-  protected boolean forcedUpdate;
 
   // case definition ///////////////////////////////////////////////////////////
 
@@ -144,12 +142,57 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
 
   protected void ensureParentInitialized() {
     if (parent == null && parentId != null) {
+      if(isExecutionTreePrefetchEnabled()) {
+        ensureCaseExecutionTreeInitialized();
 
-      parent = Context
-        .getCommandContext()
-        .getCaseExecutionManager()
-        .findCaseExecutionById(parentId);
+      } else {
+        parent = Context
+            .getCommandContext()
+            .getCaseExecutionManager()
+            .findCaseExecutionById(parentId);
+
+      }
     }
+  }
+
+  /**
+   * @see ExecutionEntity#ensureExecutionTreeInitialized
+   */
+  protected void ensureCaseExecutionTreeInitialized() {
+    List<CaseExecutionEntity> executions = Context.getCommandContext()
+      .getCaseExecutionManager()
+      .findChildCaseExecutionsByCaseInstanceId(caseInstanceId);
+
+    CaseExecutionEntity caseInstance = null;
+
+    Map<String, CaseExecutionEntity> executionMap = new HashMap<String, CaseExecutionEntity>();
+    for (CaseExecutionEntity execution : executions) {
+      execution.caseExecutions = new ArrayList<CaseExecutionEntity>();
+      executionMap.put(execution.getId(), execution);
+      if(execution.isCaseInstanceExecution()) {
+        caseInstance = execution;
+      }
+    }
+
+    for (CaseExecutionEntity execution : executions) {
+      String parentId = execution.getParentId();
+      CaseExecutionEntity parent = executionMap.get(parentId);
+      if(!execution.isCaseInstanceExecution()) {
+        execution.caseInstance = caseInstance;
+        execution.parent = parent;
+        parent.caseExecutions.add(execution);
+      } else {
+        execution.caseInstance = execution;
+      }
+    }
+  }
+
+  /**
+   * @return true if execution tree prefetching is enabled
+   */
+  protected boolean isExecutionTreePrefetchEnabled() {
+    return Context.getProcessEngineConfiguration()
+      .isExecutionTreePrefetchEnabled();
   }
 
   public String getParentId() {
@@ -392,22 +435,22 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
         .getCaseSentryPartManager()
         .findCaseSentryPartsByCaseExecutionId(id);
 
-      sentries = new HashMap<String, List<CaseSentryPartEntity>>();
+      // create a map sentries: sentryId -> caseSentryParts
+      // for simple select to get all parts for one sentry
+      sentries = new HashMap<String, List<CmmnSentryPart>>();
 
       for (CaseSentryPartEntity sentryPart : caseSentryParts) {
 
         String sentryId = sentryPart.getSentryId();
-        List<CaseSentryPartEntity> parts = sentries.get(sentryId);
+        List<CmmnSentryPart> parts = sentries.get(sentryId);
 
         if (parts == null) {
-          parts = new ArrayList<CaseSentryPartEntity>();
+          parts = new ArrayList<CmmnSentryPart>();
           sentries.put(sentryId, parts);
         }
 
         parts.add(sentryPart);
-
       }
-
     }
   }
 
@@ -417,17 +460,22 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
     getCaseSentryParts().add(entity);
 
     String sentryId = sentryPart.getSentryId();
-    List<CaseSentryPartEntity> parts = sentries.get(sentryId);
+    List<CmmnSentryPart> parts = sentries.get(sentryId);
 
     if (parts == null) {
-      parts = new ArrayList<CaseSentryPartEntity>();
+      parts = new ArrayList<CmmnSentryPart>();
       sentries.put(sentryId, parts);
     }
 
     parts.add(entity);
   }
 
-  protected List<CaseSentryPartEntity> findSentry(String sentryId) {
+  protected Map<String, List<CmmnSentryPart>> getSentries() {
+    ensureCaseSentryPartsInitialized();
+    return sentries;
+  }
+
+  protected List<CmmnSentryPart> findSentry(String sentryId) {
     ensureCaseSentryPartsInitialized();
     return sentries.get(sentryId);
   }
@@ -511,7 +559,9 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
   }
 
   public void forceUpdate() {
-    this.forcedUpdate = true;
+    Context.getCommandContext()
+      .getDbEntityManager()
+      .forceUpdate(this);
   }
 
   public boolean hasReferenceTo(DbEntity entity) {
@@ -543,11 +593,6 @@ public class CaseExecutionEntity extends CmmnExecution implements CaseExecution,
     persistentState.put("parentId", parentId);
     persistentState.put("currentState", currentState);
     persistentState.put("previousState", previousState);
-
-    if (forcedUpdate) {
-      persistentState.put("forcedUpdate", Boolean.TRUE);
-    }
-
     return persistentState;
   }
 

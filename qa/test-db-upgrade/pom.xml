@@ -72,6 +72,11 @@
           <version>${test.version.current}</version>
           <scope>test</scope>
         </dependency>
+
+        <dependency>
+          <groupId>org.camunda.spin</groupId>
+          <artifactId>camunda-spin-all</artifactId>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
@@ -88,6 +93,11 @@
           <artifactId>camunda-engine</artifactId>
           <version>${test.version.current}</version>
           <scope>test</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.camunda.spin</groupId>
+          <artifactId>camunda-spin-all</artifactId>
         </dependency>
       </dependencies>
       <build>
@@ -280,20 +290,6 @@
                     <!-- now perform the schema migrations -->
                     <srcFile>${project.build.directory}/scripts-current/sql/upgrade/${database.type}_engine_${test.version.old.major}_to_${test.version.current.major}.sql</srcFile>
                     <srcFile>${project.build.directory}/scripts-current/sql/upgrade/${database.type}_identity_${test.version.old.major}_to_${test.version.current.major}.sql</srcFile>
-                  </srcFiles>
-                </configuration>
-              </execution>
-              <execution>
-                <id>patch-new-schema</id>
-                <phase>generate-test-resources</phase>
-                <goals>
-                  <goal>execute</goal>
-                </goals>
-                <configuration>
-                  <srcFiles>
-                    <!-- now patch new version of the schema -->
-                    <srcFile>${project.build.directory}/scripts-current/sql/upgrade/${database.type}_engine_${test.version.current.major}_patch.sql</srcFile>
-                    <srcFile>${project.build.directory}/scripts-current/sql/upgrade/${database.type}_identity_${test.version.current.major}_patch.sql</srcFile>
                   </srcFiles>
                 </configuration>
               </execution>

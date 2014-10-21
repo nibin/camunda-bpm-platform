@@ -164,6 +164,15 @@
               RES.NAME_ = #{variableName}
             </if>
 
+            <!-- variablesNames -->
+            <if test="variableNames != null &amp;&amp; variableNames.length > 0">
+              and RES.NAME_ in
+              <foreach item="item" index="index" collection="variableNames"
+                       open="(" separator="," close=")">
+                #{item}
+              </foreach>
+            </if>
+
             <!-- variableNameLike -->
             <if test="variableNameLike != null">
               and RES.NAME_ like #{variableNameLike}
@@ -209,6 +218,15 @@
             <if test="taskIds != null &amp;&amp; taskIds.length > 0">
               and RES.TASK_ID_ in
               <foreach item="item" index="index" collection="taskIds"
+                       open="(" separator="," close=")">
+                #{item}
+              </foreach>
+            </if>
+
+            <!-- variableScopeIds -->
+            <if test="variableScopeIds != null &amp;&amp; variableScopeIds.length > 0">
+              and RES.VAR_SCOPE_ in
+              <foreach item="item" index="index" collection="variableScopeIds"
                        open="(" separator="," close=")">
                 #{item}
               </foreach>

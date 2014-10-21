@@ -19,16 +19,17 @@ import static org.camunda.bpm.engine.authorization.Permissions.UPDATE;
 import static org.camunda.bpm.engine.authorization.Resources.FILTER;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
-
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
@@ -40,7 +41,7 @@ import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.exception.NotValidException;
 import org.camunda.bpm.engine.exception.NullValueException;
 import org.camunda.bpm.engine.filter.Filter;
-import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
 import org.camunda.bpm.engine.query.Query;
 import org.camunda.bpm.engine.rest.FilterRestService;
 import org.camunda.bpm.engine.rest.dto.AbstractQueryDto;
@@ -52,11 +53,15 @@ import org.camunda.bpm.engine.rest.dto.task.TaskQueryDto;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.hal.EmptyHalCollection;
 import org.camunda.bpm.engine.rest.hal.EmptyHalResource;
+import org.camunda.bpm.engine.rest.hal.HalCollectionResource;
 import org.camunda.bpm.engine.rest.hal.HalResource;
+import org.camunda.bpm.engine.rest.hal.HalVariableValue;
 import org.camunda.bpm.engine.rest.hal.task.HalTask;
 import org.camunda.bpm.engine.rest.hal.task.HalTaskList;
 import org.camunda.bpm.engine.rest.impl.AbstractAuthorizedRestResource;
 import org.camunda.bpm.engine.rest.sub.runtime.FilterResource;
+import org.camunda.bpm.engine.runtime.VariableInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
@@ -64,41 +69,40 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class FilterResourceImpl extends AbstractAuthorizedRestResource implements FilterResource {
 
-  protected String filterId;
-
-  protected FilterService filterService;
-  protected String relativeRootResourcePath;
-
   public static final Pattern EMPTY_JSON_BODY = Pattern.compile("\\s*\\{\\s*\\}\\s*");
+  public static final String PROPERTIES_VARIABLES_KEY = "variables";
+  public static final String PROPERTIES_VARIABLES_NAME_KEY = "name";
 
-  public static final String DTO_MAPPING = "dto";
-  public static final String HAL_MAPPING = "hal";
-  public static final String HAL_LIST_MAPPING = "hal-list";
-
-  public static final Map<Class<?>, Map<String, Class<?>>> ENTITY_MAPPING = new HashMap<Class<?>, Map<String, Class<?>>>();
-  public static final Map<String, Class<? extends AbstractQueryDto<?>>> QUERY_MAPPING = new HashMap<String, Class<? extends AbstractQueryDto<?>>>();
-
-  static {
-    // Task
-    Map<String, Class<?>> mapping = new HashMap<String, Class<?>>();
-    mapping.put(DTO_MAPPING, TaskDto.class);
-    mapping.put(HAL_MAPPING, HalTask.class);
-    mapping.put(HAL_LIST_MAPPING, HalTaskList.class);
-    ENTITY_MAPPING.put(TaskEntity.class, mapping);
-
-    QUERY_MAPPING.put(EntityTypes.TASK, TaskQueryDto.class);
-  }
+  protected ObjectMapper objectMapper;
+  protected String relativeRootResourcePath;
+  protected FilterService filterService;
+  protected Filter dbFilter;
 
   public FilterResourceImpl(String processEngineName, ObjectMapper objectMapper, String filterId, String relativeRootResourcePath) {
     super(processEngineName, FILTER, filterId, objectMapper);
     this.relativeRootResourcePath = relativeRootResourcePath;
-    this.filterId = filterId;
+    this.objectMapper = objectMapper;
     filterService = processEngine.getFilterService();
   }
 
-  public FilterDto getFilter() {
+  public FilterDto getFilter(Boolean itemCount) {
     Filter filter = getDbFilter();
-    return FilterDto.fromFilter(filter);
+    FilterDto dto = FilterDto.fromFilter(filter);
+    if (itemCount != null && itemCount) {
+      dto.setItemCount(filterService.count(filter.getId()));
+    }
+    return dto;
+  }
+
+  protected Filter getDbFilter() {
+    if (dbFilter == null) {
+      dbFilter = filterService.getFilter(resourceId);
+
+      if (dbFilter == null) {
+        throw filterNotFound(null);
+      }
+    }
+    return dbFilter;
   }
 
   public void deleteFilter() {
@@ -106,7 +110,7 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
       filterService.deleteFilter(resourceId);
     }
     catch (NullValueException e) {
-      throw new InvalidRequestException(Status.NOT_FOUND, e, "No filter found for id '" + resourceId + "'");
+      throw filterNotFound(e);
     }
   }
 
@@ -127,31 +131,44 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
     return querySingleResult(null);
   }
 
-  public HalResource executeHalSingleResult() {
-    return queryHalSingleResult(null);
-  }
-
   public Object querySingleResult(String extendingQuery) {
     Object entity = executeFilterSingleResult(extendingQuery);
 
     if (entity != null) {
-      Method fromEntity = getMethodFromMapping(entity.getClass(), DTO_MAPPING, "fromEntity");
-      return invokeMappingMethod(fromEntity, entity);
+      return convertToDto(entity);
     }
     else {
       return null;
     }
   }
 
+  public HalResource executeHalSingleResult() {
+    return queryHalSingleResult(null);
+  }
+
   public HalResource queryHalSingleResult(String extendingQuery) {
     Object entity = executeFilterSingleResult(extendingQuery);
 
     if (entity != null) {
-      Method fromEntity = getMethodFromMapping(entity.getClass(), HAL_MAPPING, "generate");
-      return (HalResource) invokeMappingMethod(fromEntity, entity, processEngine);
+      return convertToHalResource(entity);
     }
     else {
       return EmptyHalResource.INSTANCE;
+    }
+  }
+
+  protected Object executeFilterSingleResult(String extendingQuery) {
+    try {
+      return  filterService.singleResult(resourceId, convertQuery(extendingQuery));
+    }
+    catch (NullValueException e) {
+      throw filterNotFound(e);
+    }
+    catch (NotValidException e) {
+      throw invalidQuery(e);
+    }
+    catch (ProcessEngineException e) {
+      throw new InvalidRequestException(Status.BAD_REQUEST, e, "Filter does not returns a valid single result");
     }
   }
 
@@ -159,59 +176,29 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
     return queryList(null, firstResult, maxResults);
   }
 
-  public HalResource executeHalList(Integer firstResult, Integer maxResults) {
-    return queryHalList(null, firstResult, maxResults);
-  }
-
   public List<Object> queryList(String extendingQuery, Integer firstResult, Integer maxResults) {
     List<?> entities = executeFilterList(extendingQuery, firstResult, maxResults);
 
     if (entities != null && !entities.isEmpty()) {
-      Method fromEntity = getMethodFromMapping(entities.get(0).getClass(), DTO_MAPPING, "fromEntity");
-      List<Object> results = new ArrayList<Object>();
-      for (Object entity : entities) {
-        results.add(invokeMappingMethod(fromEntity, entity));
-      }
-      return results;
+      return convertToDtoList(entities);
     }
     else {
       return Collections.emptyList();
     }
   }
 
+  public HalResource executeHalList(Integer firstResult, Integer maxResults) {
+    return queryHalList(null, firstResult, maxResults);
+  }
+
   public HalResource queryHalList(String extendingQuery, Integer firstResult, Integer maxResults) {
     List<?> entities = executeFilterList(extendingQuery, firstResult, maxResults);
 
     if (entities != null && !entities.isEmpty()) {
-      long count = executeFilterCount(null);
-      Method fromEntityList = getMethodFromMapping(entities.get(0).getClass(), HAL_LIST_MAPPING, "generate");
-      return (HalResource) invokeMappingMethod(fromEntityList, entities, count, processEngine);
+      return convertToHalCollection(entities);
     }
     else {
       return EmptyHalCollection.INSTANCE;
-    }
-  }
-
-  public CountResultDto executeCount() {
-    return queryCount(null);
-  }
-
-  public CountResultDto queryCount(String extendingQuery) {
-    return new CountResultDto(executeFilterCount(extendingQuery));
-  }
-
-  protected Object executeFilterSingleResult(String extendingQuery) {
-    try {
-      return  filterService.singleResult(filterId, convertQuery(extendingQuery));
-    }
-    catch (NullValueException e) {
-      throw new InvalidRequestException(Status.NOT_FOUND, e, "Filter with id '" + resourceId + "' does not exist.");
-    }
-    catch (NotValidException e) {
-      throw new InvalidRequestException(Status.BAD_REQUEST, e, "Filter cannot be extended by an invalid query");
-    }
-    catch (ProcessEngineException e) {
-      throw new InvalidRequestException(Status.BAD_REQUEST, e, "Filter does not returns a valid single result");
     }
   }
 
@@ -231,64 +218,31 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
       }
     }
     catch (NullValueException e) {
-      throw new InvalidRequestException(Status.NOT_FOUND, e, "Filter with id '" + resourceId + "' does not exist.");
+      throw filterNotFound(e);
     }
     catch (NotValidException e) {
-      throw new InvalidRequestException(Status.BAD_REQUEST, e, "Filter cannot be extended by an invalid query");
+      throw invalidQuery(e);
     }
+  }
+
+  public CountResultDto executeCount() {
+    return queryCount(null);
+  }
+
+  public CountResultDto queryCount(String extendingQuery) {
+    return new CountResultDto(executeFilterCount(extendingQuery));
   }
 
   protected long executeFilterCount(String extendingQuery) {
     try {
-      return filterService.count(filterId, convertQuery(extendingQuery));
+      return filterService.count(resourceId, convertQuery(extendingQuery));
     }
     catch (NullValueException e) {
-      throw new InvalidRequestException(Status.NOT_FOUND, e, "Filter with id '" + resourceId + "' does not exist.");
+      throw filterNotFound(e);
     }
     catch (NotValidException e) {
       throw new InvalidRequestException(Status.BAD_REQUEST, e, "Filter cannot be extended by an invalid query");
     }
-  }
-
-  protected Method getMethodFromMapping(Class<?> entityClass, String mappingKey, String methodName) {
-    Map<String, Class<?>> mapping = ENTITY_MAPPING.get(entityClass);
-    if (mapping != null) {
-      Class<?> mapClass = mapping.get(mappingKey);
-      if (mapClass != null) {
-        for (Method method : mapClass.getMethods()) {
-          if (method.getName().equals(methodName)) {
-            return method;
-          }
-        }
-        throw new InvalidRequestException(Status.INTERNAL_SERVER_ERROR, "Unable to find method '" + methodName + "' of class '" + mapClass.getCanonicalName() + "'");
-      }
-      else {
-        throw new InvalidRequestException(Status.INTERNAL_SERVER_ERROR, "No mapping '" + mappingKey + "' for class '" + entityClass.getCanonicalName() + "' defined");
-      }
-    }
-    else {
-      throw new InvalidRequestException(Status.INTERNAL_SERVER_ERROR, "Unable to find mapping for class '" + entityClass.getCanonicalName() + "'");
-    }
-  }
-
-  protected Object invokeMappingMethod(Method mappingMethod, Object... arguments) {
-    try {
-      return mappingMethod.invoke(null, arguments);
-    } catch (IllegalAccessException e) {
-      throw new InvalidRequestException(Status.INTERNAL_SERVER_ERROR, e, "Unable to access method '" + mappingMethod.getName() + "'");
-    } catch (InvocationTargetException e) {
-      throw new InvalidRequestException(Status.INTERNAL_SERVER_ERROR, e, "Unable to invoke method '" + mappingMethod.getName() + "'");
-    }
-  }
-
-  protected Filter getDbFilter() {
-    Filter filter = filterService
-      .getFilter(resourceId);
-
-    if (filter == null) {
-      throw new InvalidRequestException(Status.NOT_FOUND, "Filter with id '" + resourceId + "' does not exist.");
-    }
-    return filter;
   }
 
   public ResourceOptionsDto availableOperations(UriInfo context) {
@@ -296,9 +250,9 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
     ResourceOptionsDto dto = new ResourceOptionsDto();
 
     UriBuilder baseUriBuilder = context.getBaseUriBuilder()
-        .path(relativeRootResourcePath)
-        .path(FilterRestService.class)
-        .path(resourceId);
+      .path(relativeRootResourcePath)
+      .path(FilterRestService.class)
+      .path(resourceId);
 
     URI baseUri = baseUriBuilder.build();
 
@@ -329,30 +283,228 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
     return dto;
   }
 
-  protected Query<?, ?> convertQuery(String queryString) {
-    if (queryString == null || queryString.trim().isEmpty() || EMPTY_JSON_BODY.matcher(queryString).matches()) {
+  protected Query convertQuery(String queryString) {
+    if (isEmptyJson(queryString)) {
       return null;
     }
     else {
       String resourceType = getDbFilter().getResourceType();
-      Class<? extends AbstractQueryDto<?>> queryDtoClass = QUERY_MAPPING.get(resourceType);
-      if (queryDtoClass != null) {
-        try {
-          AbstractQueryDto<?> queryDto = getObjectMapper().readValue(queryString, queryDtoClass);
-          if (queryDto != null) {
-            return queryDto.toQuery(processEngine);
-          }
-          else {
-            return null;
-          }
-        } catch (IOException e) {
-          throw new InvalidRequestException(Status.BAD_REQUEST, e, "Unable to convert query of type '" + resourceType + "' to query dto class '" + queryDtoClass.getCanonicalName() + "'");
-        }
-      }
-      else {
-        throw new InvalidRequestException(Status.BAD_REQUEST, "Unsupported filter type '" + resourceType + "'");
+      AbstractQueryDto<?> queryDto = getQueryDtoForQuery(queryString, resourceType);
+      if (queryDto != null) {
+        return queryDto.toQuery(processEngine);
+      } else {
+        throw new InvalidRequestException(Status.BAD_REQUEST, "Unable to convert query for resource type '" + resourceType + "'.");
       }
     }
+  }
+
+  protected Object convertToDto(Object entity) {
+    if (isEntityOfClass(entity, Task.class)) {
+      return TaskDto.fromEntity((Task) entity);
+    }
+    else {
+      throw unsupportedEntityClass(entity);
+    }
+  }
+
+  protected List<Object> convertToDtoList(List<?> entities) {
+    List<Object> dtoList = new ArrayList<Object>();
+    for (Object entity : entities) {
+      dtoList.add(convertToDto(entity));
+    }
+    return dtoList;
+  }
+
+  protected HalResource<?> convertToHalResource(Object entity) {
+    if (isEntityOfClass(entity, Task.class)) {
+      return convertToHalTask((Task) entity);
+    }
+    else {
+      throw unsupportedEntityClass(entity);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  protected HalTask convertToHalTask(Task task) {
+    HalTask halTask = HalTask.generate(task, getProcessEngine());
+    Map<String, List<VariableInstance>> variableInstances = getVariableInstancesForTasks(halTask);
+    if (variableInstances != null) {
+      embedVariableValuesInHalTask(halTask, variableInstances);
+    }
+    return halTask;
+  }
+
+  @SuppressWarnings("unchecked")
+  protected HalCollectionResource<HalTaskList> convertToHalCollection(List<?> entities) {
+    long count = executeFilterCount(null);
+
+    if (isEntityOfClass(entities.get(0), Task.class)) {
+      return convertToHalTaskList((List<Task>) entities, count);
+    }
+    else {
+      throw unsupportedEntityClass(entities.get(0));
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  protected HalTaskList convertToHalTaskList(List<Task> tasks, long count) {
+    HalTaskList halTasks = HalTaskList.generate(tasks, count, getProcessEngine());
+    Map<String, List<VariableInstance>> variableInstances = getVariableInstancesForTasks(halTasks);
+    if (variableInstances != null) {
+      for (HalTask halTask : (List<HalTask>) halTasks.getEmbedded("task")) {
+        embedVariableValuesInHalTask(halTask, variableInstances);
+      }
+    }
+    return halTasks;
+  }
+
+  protected void embedVariableValuesInHalTask( HalTask halTask, Map<String, List<VariableInstance>> variableInstances) {
+    List<HalResource<?>> variableValues = getVariableValuesForTask(halTask, variableInstances);
+    halTask.addEmbedded("variable", variableValues);
+  }
+
+  protected AbstractQueryDto<?> getQueryDtoForQuery(String queryString, String resourceType) {
+    try {
+      if (EntityTypes.TASK.equals(resourceType)) {
+        return objectMapper.readValue(queryString, TaskQueryDto.class);
+      } else {
+        throw new InvalidRequestException(Status.BAD_REQUEST, "Queries for resource type '" + resourceType + "' are currently not supported by filters.");
+      }
+    } catch (IOException e) {
+      throw new InvalidRequestException(Status.BAD_REQUEST, e, "Invalid query for resource type '" + resourceType + "'");
+    }
+  }
+
+  protected List<HalResource<?>> getVariableValuesForTask(HalTask halTask, Map<String, List<VariableInstance>> variableInstances) {
+    // converted variables values
+    List<HalResource<?>> variableValues = new ArrayList<HalResource<?>>();
+
+    // variable scope ids to check, ordered by visibility
+    LinkedHashSet<String> variableScopeIds = getVariableScopeIds(halTask);
+
+    // names of already converted variables
+    Set<String> knownVariableNames = new HashSet<String>();
+
+    for (String variableScopeId : variableScopeIds) {
+      if (variableInstances.containsKey(variableScopeId)) {
+        for (VariableInstance variableInstance : variableInstances.get(variableScopeId)) {
+          if (!knownVariableNames.contains(variableInstance.getName())) {
+            variableValues.add(HalVariableValue.generateVariableValue(variableInstance, variableScopeId));
+            knownVariableNames.add(variableInstance.getName());
+          }
+        }
+      }
+    }
+
+    return variableValues;
+  }
+
+  @SuppressWarnings("unchecked")
+  protected Map<String, List<VariableInstance>> getVariableInstancesForTasks(HalTaskList halTaskList) {
+    List<HalTask> halTasks = (List<HalTask>) halTaskList.getEmbedded("task");
+    return getVariableInstancesForTasks(halTasks.toArray(new HalTask[halTasks.size()]));
+  }
+
+  protected Map<String, List<VariableInstance>> getVariableInstancesForTasks(HalTask... halTasks) {
+    if (halTasks != null && halTasks.length > 0) {
+      List<String> variableNames = getFilterVariableNames();
+      if (variableNames != null && !variableNames.isEmpty()) {
+        LinkedHashSet<String> variableScopeIds = getVariableScopeIds(halTasks);
+        return getSortedVariableInstances(variableNames, variableScopeIds);
+      }
+    }
+    return null;
+  }
+
+  @SuppressWarnings("unchecked")
+  protected List<String> getFilterVariableNames() {
+    Map<String, Object> properties = getDbFilter().getProperties();
+    if (properties != null) {
+      try {
+        List<Map<String, Object>> variables = (List<Map<String, Object>>) properties.get(PROPERTIES_VARIABLES_KEY);
+        return collectVariableNames(variables);
+      }
+      catch (Exception e) {
+        throw new InvalidRequestException(Status.INTERNAL_SERVER_ERROR, e, "Filter property '" + PROPERTIES_VARIABLES_KEY + "' has to be a list of variable definitions with a '" + PROPERTIES_VARIABLES_NAME_KEY + "' property");
+      }
+    }
+    else {
+      return null;
+    }
+  }
+
+  private List<String> collectVariableNames(List<Map<String, Object>> variables) {
+    if (variables != null && !variables.isEmpty()) {
+      List<String> variableNames = new ArrayList<String>();
+      for (Map<String, Object> variable : variables) {
+        variableNames.add((String) variable.get(PROPERTIES_VARIABLES_NAME_KEY));
+      }
+      return variableNames;
+    }
+    else {
+      return null;
+    }
+  }
+
+  protected LinkedHashSet<String> getVariableScopeIds(HalTask... halTasks) {
+    // collect scope ids
+    // the ordering is important because it specifies which variables are visible from a single task
+    LinkedHashSet<String> variableScopeIds = new LinkedHashSet<String>();
+    if (halTasks != null && halTasks.length > 0) {
+      for (HalTask halTask : halTasks) {
+        variableScopeIds.add(halTask.getId());
+        variableScopeIds.add(halTask.getExecutionId());
+        variableScopeIds.add(halTask.getProcessInstanceId());
+        variableScopeIds.add(halTask.getCaseExecutionId());
+        variableScopeIds.add(halTask.getCaseInstanceId());
+      }
+    }
+
+    // remove null from set which was probably added due an unset id
+    variableScopeIds.remove(null);
+
+    return variableScopeIds;
+  }
+
+  protected Map<String, List<VariableInstance>> getSortedVariableInstances(Collection<String> variableNames, Collection<String> variableScopeIds) {
+    List<VariableInstance> variableInstances = queryVariablesInstancesByVariableScopeIds(variableNames, variableScopeIds);
+    Map<String, List<VariableInstance>> sortedVariableInstances = new HashMap<String, List<VariableInstance>>();
+    for (VariableInstance variableInstance : variableInstances) {
+      String variableScopeId = ((VariableInstanceEntity) variableInstance).getVariableScope();
+      if (!sortedVariableInstances.containsKey(variableScopeId)) {
+        sortedVariableInstances.put(variableScopeId, new ArrayList<VariableInstance>());
+      }
+      sortedVariableInstances.get(variableScopeId).add(variableInstance);
+    }
+    return sortedVariableInstances;
+  }
+
+  protected List<VariableInstance> queryVariablesInstancesByVariableScopeIds(Collection<String> variableNames, Collection<String> variableScopeIds) {
+    return getProcessEngine().getRuntimeService()
+      .createVariableInstanceQuery()
+      .variableNameIn(variableNames.toArray(new String[variableNames.size()]))
+      .variableScopeIdIn(variableScopeIds.toArray(new String[variableScopeIds.size()]))
+      .list();
+  }
+
+  protected boolean isEntityOfClass(Object entity, Class<?> entityClass) {
+    return entityClass.isAssignableFrom(entity.getClass());
+  }
+
+  protected boolean isEmptyJson(String jsonString) {
+    return jsonString == null || jsonString.trim().isEmpty() || EMPTY_JSON_BODY.matcher(jsonString).matches();
+  }
+
+  protected InvalidRequestException filterNotFound(Exception cause) {
+    return new InvalidRequestException(Status.NOT_FOUND, cause, "Filter with id '" + resourceId + "' does not exist.");
+  }
+
+  protected InvalidRequestException invalidQuery(Exception cause) {
+    return new InvalidRequestException(Status.BAD_REQUEST, cause, "Filter cannot be extended by an invalid query");
+  }
+
+  protected InvalidRequestException unsupportedEntityClass(Object entity) {
+    return new InvalidRequestException(Status.BAD_REQUEST, "Entities of class '" + entity.getClass().getCanonicalName() + "' are currently not supported by filters.");
   }
 
 }

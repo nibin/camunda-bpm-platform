@@ -13,7 +13,15 @@
 
 package org.camunda.bpm.engine.impl.db.sql;
 
-import java.io.*;
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -23,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.ibatis.session.SqlSession;
-import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.WrongDbException;
@@ -35,8 +42,6 @@ import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.util.ClassNameUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.impl.util.ReflectUtil;
-
-import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
 
 
 /**
@@ -130,10 +135,10 @@ public class DbSqlSession extends AbstractPersistenceSession {
     }
     sqlSession.insert(insertStatement, parameter);
 
-    // increment revision of our copy
+    // set revision of our copy to 1
     if (parameter instanceof HasDbRevision) {
       HasDbRevision versionedObject = (HasDbRevision) parameter;
-      versionedObject.setRevision(versionedObject.getRevisionNext());
+      versionedObject.setRevision(1);
     }
   }
 
@@ -156,27 +161,22 @@ public class DbSqlSession extends AbstractPersistenceSession {
     }
 
     // execute the delete
-    executeDelete(deleteStatement, dbEntity);
+    int nrOfRowsDeleted = executeDelete(deleteStatement, dbEntity);
+
+    // It only makes sense to check for optimistic locking exceptions for objects that actually have a revision
+    if (dbEntity instanceof HasDbRevision && nrOfRowsDeleted == 0) {
+      operation.setFailed(true);
+      return;
+    }
 
     // perform post delete action
     entityDeleted(dbEntity);
   }
 
-  protected void executeDelete(String deleteStatement, Object parameter) {
-
+  protected int executeDelete(String deleteStatement, Object parameter) {
     // map the statement
     deleteStatement = dbSqlSessionFactory.mapStatement(deleteStatement);
-
-    // It only makes sense to check for optimistic locking exceptions for objects that actually have a revision
-    if (parameter instanceof HasDbRevision) {
-      int nrOfRowsDeleted = sqlSession.delete(deleteStatement, parameter);
-      if (nrOfRowsDeleted == 0) {
-        // enforce optimistic locking
-        throw new OptimisticLockingException(toString(parameter) + " was updated by another transaction concurrently");
-      }
-    } else {
-      sqlSession.delete(deleteStatement, parameter);
-    }
+    return sqlSession.delete(deleteStatement, parameter);
   }
 
   protected void entityDeleted(final DbEntity entity) {
@@ -204,32 +204,31 @@ public class DbSqlSession extends AbstractPersistenceSession {
     ensureNotNull("no update statement for " + dbEntity.getClass() + " in the ibatis mapping files", "updateStatement", updateStatement);
 
     if (log.isLoggable(Level.FINE)) {
-      log.fine("updating: " + toString(dbEntity) + "]");
+      log.fine("updating: " + toString(dbEntity));
     }
 
     // execute update
-    executeUpdate(updateStatement, dbEntity);
+    int numOfRowsUpdated = executeUpdate(updateStatement, dbEntity);
+
+    if (dbEntity instanceof HasDbRevision) {
+      if(numOfRowsUpdated != 1) {
+        // failed with optimistic locking
+        operation.setFailed(true);
+        return;
+      } else {
+        // increment revision of our copy
+        HasDbRevision versionedObject = (HasDbRevision) dbEntity;
+        versionedObject.setRevision(versionedObject.getRevisionNext());
+      }
+    }
 
     // perform post update action
     entityUpdated(dbEntity);
   }
 
-  protected void executeUpdate(String updateStatement, Object parameter) {
-
+  protected int executeUpdate(String updateStatement, Object parameter) {
     updateStatement = dbSqlSessionFactory.mapStatement(updateStatement);
-
-    int updatedRecords = sqlSession.update(updateStatement, parameter);
-
-    if (parameter instanceof HasDbRevision) {
-      if (updatedRecords != 1) {
-        // enforce optimistic locking
-        throw new OptimisticLockingException(toString(parameter) + " was updated by another transaction concurrently");
-      } else {
-        // increment revision of our copy
-        HasDbRevision versionedObject = (HasDbRevision) parameter;
-        versionedObject.setRevision(versionedObject.getRevisionNext());
-      }
-    }
+    return sqlSession.update(updateStatement, parameter);
   }
 
   protected void entityUpdated(final DbEntity entity) {
@@ -297,7 +296,7 @@ public class DbSqlSession extends AbstractPersistenceSession {
       if (dbSqlSessionFactory.isDbIdentityUsed() && !isIdentityTablePresent()) {
         errorMessage = addMissingComponent(errorMessage, "identity");
       }
-      if (dbSqlSessionFactory.isCmmnEnabled() && !isCaseDefinitionTablePresent()) {
+      if (dbSqlSessionFactory.isCmmnEnabled() && !isCmmnTablePresent()) {
         errorMessage = addMissingComponent(errorMessage, "case.engine");
       }
 
@@ -348,6 +347,10 @@ public class DbSqlSession extends AbstractPersistenceSession {
     executeMandatorySchemaResource("create", "case.engine");
   }
 
+  protected void dbSchemaCreateCmmnHistory() {
+    executeMandatorySchemaResource("create", "case.history");
+  }
+
   protected void dbSchemaDropIdentity() {
     executeMandatorySchemaResource("drop", "identity");
   }
@@ -363,6 +366,11 @@ public class DbSqlSession extends AbstractPersistenceSession {
   protected void dbSchemaDropCmmn() {
     executeMandatorySchemaResource("drop", "case.engine");
   }
+
+  protected void dbSchemaDropCmmnHistory() {
+    executeMandatorySchemaResource("drop", "case.history");
+  }
+
 
   public void executeMandatorySchemaResource(String operation, String component) {
     executeSchemaResource(operation, component, getResourceForDbOperation(operation, operation, component), false);
@@ -380,8 +388,12 @@ public class DbSqlSession extends AbstractPersistenceSession {
     return isTablePresent("ACT_ID_USER");
   }
 
-  public boolean isCaseDefinitionTablePresent() {
+  public boolean isCmmnTablePresent() {
     return isTablePresent("ACT_RE_CASE_DEF");
+  }
+
+  public boolean isCmmnHistoryTablePresent() {
+    return isTablePresent("ACT_HI_CASEINST");
   }
 
   public boolean isTablePresent(String tableName) {

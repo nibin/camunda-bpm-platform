@@ -13,33 +13,44 @@
 
 package org.camunda.bpm.engine.rest;
 
+import static org.camunda.bpm.engine.variable.Variables.*;
 import static com.jayway.restassured.RestAssured.given;
+import static com.jayway.restassured.path.json.JsonPath.from;
 import static org.camunda.bpm.engine.authorization.Authorization.ANY;
 import static org.camunda.bpm.engine.authorization.Permissions.DELETE;
 import static org.camunda.bpm.engine.authorization.Permissions.READ;
 import static org.camunda.bpm.engine.authorization.Permissions.UPDATE;
 import static org.camunda.bpm.engine.authorization.Resources.FILTER;
+import static org.camunda.bpm.engine.rest.helper.MockProvider.EXAMPLE_FILTER_ID;
+import static org.camunda.bpm.engine.rest.helper.MockProvider.mockFilter;
+import static org.camunda.bpm.engine.rest.helper.MockProvider.mockVariableInstance;
 import static org.camunda.bpm.engine.rest.helper.TaskQueryMatcher.hasName;
+import static org.fest.assertions.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
 import org.camunda.bpm.engine.AuthorizationService;
@@ -58,14 +69,17 @@ import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.query.Query;
 import org.camunda.bpm.engine.rest.dto.runtime.FilterDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskQueryDto;
-import org.camunda.bpm.engine.rest.hal.Hal;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.MockTaskBuilder;
+import org.camunda.bpm.engine.runtime.VariableInstance;
+import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
+import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
-import org.codehaus.jackson.map.JsonMappingException;
+import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 
 /**
@@ -84,11 +98,21 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   public static final TaskQueryDto extendingQueryDto = TaskQueryDto.fromQuery(extendingQuery);
   public static final String invalidExtendingQuery = "abc";
 
+  public static final String PROCESS_INSTANCE_A_ID = "processInstanceA";
+  public static final String CASE_INSTANCE_A_ID = "caseInstanceA";
+  public static final String EXECUTION_A_ID = "executionA";
+  public static final String EXECUTION_B_ID = "executionB";
+  public static final String CASE_EXECUTION_A_ID = "caseExecutionA";
+  public static final String TASK_A_ID = "taskA";
+  public static final String TASK_B_ID = "taskB";
+  public static final String TASK_C_ID = "taskC";
+
   protected FilterService filterServiceMock;
   protected Filter filterMock;
 
   protected AuthorizationService authorizationServiceMock;
   protected IdentityService identityServiceMock;
+  private VariableInstanceQuery variableInstanceQueryMock;
 
   @Before
   @SuppressWarnings("unchecked")
@@ -105,26 +129,26 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
 
     when(filterServiceMock.newTaskFilter()).thenReturn(filterMock);
     when(filterServiceMock.saveFilter(eq(filterMock))).thenReturn(filterMock);
-    when(filterServiceMock.getFilter(eq(MockProvider.EXAMPLE_FILTER_ID))).thenReturn(filterMock);
+    when(filterServiceMock.getFilter(eq(EXAMPLE_FILTER_ID))).thenReturn(filterMock);
     when(filterServiceMock.getFilter(eq(MockProvider.NON_EXISTING_ID))).thenReturn(null);
 
     List mockTasks = Collections.singletonList(new TaskEntity());
 
-    when(filterServiceMock.singleResult(eq(MockProvider.EXAMPLE_FILTER_ID)))
+    when(filterServiceMock.singleResult(eq(EXAMPLE_FILTER_ID)))
       .thenReturn(mockTasks.get(0));
-    when(filterServiceMock.singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class)))
+    when(filterServiceMock.singleResult(eq(EXAMPLE_FILTER_ID), any(Query.class)))
       .thenReturn(mockTasks.get(0));
-    when(filterServiceMock.list(eq(MockProvider.EXAMPLE_FILTER_ID)))
+    when(filterServiceMock.list(eq(EXAMPLE_FILTER_ID)))
       .thenReturn(mockTasks);
-    when(filterServiceMock.list(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class)))
+    when(filterServiceMock.list(eq(EXAMPLE_FILTER_ID), any(Query.class)))
       .thenReturn(mockTasks);
-    when(filterServiceMock.listPage(eq(MockProvider.EXAMPLE_FILTER_ID), anyInt(), anyInt()))
+    when(filterServiceMock.listPage(eq(EXAMPLE_FILTER_ID), anyInt(), anyInt()))
       .thenReturn(mockTasks);
-    when(filterServiceMock.listPage(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class), anyInt(), anyInt()))
+    when(filterServiceMock.listPage(eq(EXAMPLE_FILTER_ID), any(Query.class), anyInt(), anyInt()))
       .thenReturn(mockTasks);
-    when(filterServiceMock.count(eq(MockProvider.EXAMPLE_FILTER_ID)))
+    when(filterServiceMock.count(eq(EXAMPLE_FILTER_ID)))
       .thenReturn((long) 1);
-    when(filterServiceMock.count(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class)))
+    when(filterServiceMock.count(eq(EXAMPLE_FILTER_ID), any(Query.class)))
       .thenReturn((long) 1);
 
     doThrow(new NullValueException("No filter found with given id"))
@@ -154,19 +178,27 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
 
     TaskService taskService = processEngine.getTaskService();
     when(taskService.createTaskQuery()).thenReturn(new TaskQueryImpl());
+
+    variableInstanceQueryMock = mock(VariableInstanceQuery.class);
+    when(processEngine.getRuntimeService().createVariableInstanceQuery())
+      .thenReturn(variableInstanceQueryMock);
+    when(variableInstanceQueryMock.variableScopeIdIn((String) anyVararg()))
+      .thenReturn(variableInstanceQueryMock);
+    when(variableInstanceQueryMock.variableNameIn((String) anyVararg()))
+      .thenReturn(variableInstanceQueryMock);
   }
 
   @Test
   public void testGetFilter() {
     given()
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
-      .body("id", equalTo(MockProvider.EXAMPLE_FILTER_ID))
+      .body("id", equalTo(EXAMPLE_FILTER_ID))
     .when()
       .get(SINGLE_FILTER_URL);
 
-    verify(filterServiceMock).getFilter(eq(MockProvider.EXAMPLE_FILTER_ID));
+    verify(filterServiceMock).getFilter(eq(EXAMPLE_FILTER_ID));
   }
 
   @Test
@@ -214,7 +246,7 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     FilterDto dto = FilterDto.fromFilter(MockProvider.createMockFilter());
 
     given()
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(dto)
     .then().expect()
@@ -222,7 +254,7 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .put(SINGLE_FILTER_URL);
 
-    verify(filterServiceMock).getFilter(eq(MockProvider.EXAMPLE_FILTER_ID));
+    verify(filterServiceMock).getFilter(eq(EXAMPLE_FILTER_ID));
     verify(filterServiceMock).saveFilter(eq(filterMock));
   }
 
@@ -232,13 +264,11 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     dto.setResourceType("invalid");
 
     given()
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(dto)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
-      .contentType(ContentType.JSON)
-      .body("type", equalTo(JsonMappingException.class.getSimpleName()))
     .when()
       .put(SINGLE_FILTER_URL);
   }
@@ -258,7 +288,7 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testUpdateInvalidFilter() {
     given()
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
     .then().expect()
@@ -270,13 +300,13 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testDeleteFilter() {
     given()
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.NO_CONTENT.getStatusCode())
     .when()
       .delete(SINGLE_FILTER_URL);
 
-    verify(filterServiceMock).deleteFilter(eq(MockProvider.EXAMPLE_FILTER_ID));
+    verify(filterServiceMock).deleteFilter(eq(EXAMPLE_FILTER_ID));
   }
 
   @Test
@@ -292,14 +322,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testExecuteSingleResult() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
     .when()
       .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
@@ -307,14 +337,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     when(filterServiceMock.singleResult(anyString(), any(Query.class))).thenReturn(null);
 
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.NO_CONTENT.getStatusCode())
     .when()
       .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
@@ -323,27 +353,27 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
       .when(filterServiceMock).singleResult(anyString(), any(Query.class));
 
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
     .when()
       .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
   public void testExecuteHalSingleResult() {
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .when()
       .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID),isNull(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID),isNull(Query.class));
   }
 
   @Test
@@ -351,8 +381,8 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     when(filterServiceMock.singleResult(anyString(), any(Query.class))).thenReturn(null);
 
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("_links.size()", equalTo(0))
@@ -360,7 +390,7 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
@@ -369,20 +399,20 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
       .when(filterServiceMock).singleResult(anyString(), any(Query.class));
 
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
     .when()
       .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
   public void testExecuteSingleResultOfNonExistingFilter() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
+      .header(ACCEPT_JSON_HEADER)
       .pathParam("id", MockProvider.NON_EXISTING_ID)
     .then().expect()
       .statusCode(Status.NOT_FOUND.getStatusCode())
@@ -395,8 +425,8 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testExecuteSingleResultAsPost() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
     .then().expect()
@@ -404,14 +434,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), any(Query.class));
   }
 
   @Test
   public void testExecuteHalSingleResultAsPost() {
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
     .then().expect()
@@ -419,14 +449,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class));
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID), any(Query.class));
   }
 
   @Test
   public void testExecuteSingleResultInvalidWithExtendingQuery() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(invalidExtendingQuery)
     .then().expect()
@@ -438,8 +468,8 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testExecuteSingleResultWithExtendingQuery() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(extendingQueryDto)
     .then().expect()
@@ -447,22 +477,22 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_SINGLE_RESULT_FILTER_URL);
 
-    verify(filterServiceMock).singleResult(eq(MockProvider.EXAMPLE_FILTER_ID),
+    verify(filterServiceMock).singleResult(eq(EXAMPLE_FILTER_ID),
         argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)));
   }
 
   @Test
   public void testExecuteList() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("$.size()", equalTo(1))
     .when()
       .get(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
@@ -470,29 +500,29 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     when(filterServiceMock.list(anyString(), any(Query.class))).thenReturn(Collections.emptyList());
 
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("$.size()", equalTo(0))
     .when()
       .get(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
   public void testExecuteHalList() {
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
     .when()
       .get(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
@@ -500,8 +530,8 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     when(filterServiceMock.list(anyString(), any(Query.class))).thenReturn(Collections.emptyList());
 
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("_links.size()", equalTo(0))
@@ -510,13 +540,13 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .get(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
   public void testExecuteListOfNonExistingFilter() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
+      .header(ACCEPT_JSON_HEADER)
       .pathParam("id", MockProvider.NON_EXISTING_ID)
     .then().expect()
       .statusCode(Status.NOT_FOUND.getStatusCode())
@@ -529,8 +559,8 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testExecuteListWithPagination() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .queryParams("firstResult", 1)
       .queryParams("maxResults", 2)
     .then().expect()
@@ -539,14 +569,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .get(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).listPage(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class), eq(1), eq(2));
+    verify(filterServiceMock).listPage(eq(EXAMPLE_FILTER_ID), isNull(Query.class), eq(1), eq(2));
   }
 
   @Test
   public void testExecuteListAsPost() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
     .then().expect()
@@ -555,14 +585,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), any(Query.class));
   }
 
   @Test
   public void testExecuteHalListAsPost() {
     given()
-      .header("Accept", Hal.MEDIA_TYPE_HAL)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
     .then().expect()
@@ -571,14 +601,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), any(Query.class));
   }
 
   @Test
   public void testExecuteListAsPostWithPagination() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .queryParams("firstResult", 1)
       .queryParams("maxResults", 2)
       .contentType(POST_JSON_CONTENT_TYPE)
@@ -589,14 +619,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).listPage(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class), eq(1), eq(2));
+    verify(filterServiceMock).listPage(eq(EXAMPLE_FILTER_ID), isNull(Query.class), eq(1), eq(2));
   }
 
   @Test
   public void testExecuteListWithExtendingQuery() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(extendingQueryDto)
     .then().expect()
@@ -605,14 +635,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).list(eq(MockProvider.EXAMPLE_FILTER_ID), argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)));
+    verify(filterServiceMock).list(eq(EXAMPLE_FILTER_ID), argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)));
   }
 
   @Test
   public void testExecuteListWithExtendingQueryWithPagination() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .queryParams("firstResult", 1)
       .queryParams("maxResults", 2)
       .contentType(POST_JSON_CONTENT_TYPE)
@@ -623,14 +653,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_LIST_FILTER_URL);
 
-    verify(filterServiceMock).listPage(eq(MockProvider.EXAMPLE_FILTER_ID), argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)), eq(1), eq(2));
+    verify(filterServiceMock).listPage(eq(EXAMPLE_FILTER_ID), argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)), eq(1), eq(2));
   }
 
   @Test
   public void testExecuteListWithInvalidExtendingQuery() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(invalidExtendingQuery)
     .then().expect()
@@ -642,21 +672,21 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testExecuteCount() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("count", equalTo(1))
     .when()
       .get(EXECUTE_COUNT_FILTER_URL);
 
-    verify(filterServiceMock).count(eq(MockProvider.EXAMPLE_FILTER_ID), isNull(Query.class));
+    verify(filterServiceMock).count(eq(EXAMPLE_FILTER_ID), isNull(Query.class));
   }
 
   @Test
   public void testExecuteCountOfNonExistingFilter() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
+      .header(ACCEPT_JSON_HEADER)
       .pathParam("id", MockProvider.NON_EXISTING_ID)
     .then().expect()
       .statusCode(Status.NOT_FOUND.getStatusCode())
@@ -669,8 +699,8 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   @Test
   public void testExecuteCountAsPost() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(EMPTY_JSON_OBJECT)
     .then().expect()
@@ -679,14 +709,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_COUNT_FILTER_URL);
 
-    verify(filterServiceMock).count(eq(MockProvider.EXAMPLE_FILTER_ID), any(Query.class));
+    verify(filterServiceMock).count(eq(EXAMPLE_FILTER_ID), any(Query.class));
   }
 
   @Test
   public void testExecuteCountWithExtendingQuery() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(extendingQueryDto)
     .then().expect()
@@ -695,14 +725,14 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     .when()
       .post(EXECUTE_COUNT_FILTER_URL);
 
-    verify(filterServiceMock).count(eq(MockProvider.EXAMPLE_FILTER_ID), argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)));
+    verify(filterServiceMock).count(eq(EXAMPLE_FILTER_ID), argThat(hasName(MockProvider.EXAMPLE_TASK_NAME)));
   }
 
   @Test
   public void testExecuteCountWithInvalidExtendingQuery() {
     given()
-      .header("Accept", MediaType.APPLICATION_JSON)
-      .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+      .header(ACCEPT_JSON_HEADER)
+      .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
       .body(invalidExtendingQuery)
     .then().expect()
@@ -775,12 +805,12 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
 
   @Test
   public void testAnonymousFilterResourceOptions() {
-    String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + MockProvider.EXAMPLE_FILTER_ID;
+    String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + EXAMPLE_FILTER_ID;
 
     // anonymity means the identityService returns a null authentication, so no need to mock here
 
     given()
-        .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+        .pathParam("id", EXAMPLE_FILTER_ID)
     .then()
         .statusCode(Status.OK.getStatusCode())
 
@@ -834,12 +864,12 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     Authentication authentication = new Authentication(MockProvider.EXAMPLE_USER_ID, null);
     when(identityServiceMock.getCurrentAuthentication()).thenReturn(authentication);
 
-    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, MockProvider.EXAMPLE_FILTER_ID)).thenReturn(false);
-    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, MockProvider.EXAMPLE_FILTER_ID)).thenReturn(false);
-    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, MockProvider.EXAMPLE_FILTER_ID)).thenReturn(false);
+    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, EXAMPLE_FILTER_ID)).thenReturn(false);
+    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, EXAMPLE_FILTER_ID)).thenReturn(false);
+    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, EXAMPLE_FILTER_ID)).thenReturn(false);
 
     given()
-        .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+        .pathParam("id", EXAMPLE_FILTER_ID)
     .then()
         .statusCode(Status.OK.getStatusCode())
 
@@ -849,24 +879,24 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
         .options(SINGLE_FILTER_URL);
 
     verify(identityServiceMock, times(3)).getCurrentAuthentication();
-    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, MockProvider.EXAMPLE_FILTER_ID);
-    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, MockProvider.EXAMPLE_FILTER_ID);
-    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, MockProvider.EXAMPLE_FILTER_ID);
+    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, EXAMPLE_FILTER_ID);
+    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, EXAMPLE_FILTER_ID);
+    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, EXAMPLE_FILTER_ID);
 
   }
 
   @Test
   public void testFilterResourceOptionsUpdateUnauthorized() {
-    String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + MockProvider.EXAMPLE_FILTER_ID;
+    String fullFilterUrl = "http://localhost:" + PORT + FILTER_URL + "/" + EXAMPLE_FILTER_ID;
 
     Authentication authentication = new Authentication(MockProvider.EXAMPLE_USER_ID, null);
     when(identityServiceMock.getCurrentAuthentication()).thenReturn(authentication);
-    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, MockProvider.EXAMPLE_FILTER_ID)).thenReturn(true);
-    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, MockProvider.EXAMPLE_FILTER_ID)).thenReturn(true);
-    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, MockProvider.EXAMPLE_FILTER_ID)).thenReturn(false);
+    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, EXAMPLE_FILTER_ID)).thenReturn(true);
+    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, EXAMPLE_FILTER_ID)).thenReturn(true);
+    when(authorizationServiceMock.isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, EXAMPLE_FILTER_ID)).thenReturn(false);
 
     given()
-        .pathParam("id", MockProvider.EXAMPLE_FILTER_ID)
+        .pathParam("id", EXAMPLE_FILTER_ID)
     .then()
         .statusCode(Status.OK.getStatusCode())
 
@@ -908,10 +938,341 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
         .options(SINGLE_FILTER_URL);
 
     verify(identityServiceMock, times(3)).getCurrentAuthentication();
-    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, MockProvider.EXAMPLE_FILTER_ID);
-    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, MockProvider.EXAMPLE_FILTER_ID);
-    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, MockProvider.EXAMPLE_FILTER_ID);
+    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, READ, FILTER, EXAMPLE_FILTER_ID);
+    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, DELETE, FILTER, EXAMPLE_FILTER_ID);
+    verify(authorizationServiceMock, times(1)).isUserAuthorized(MockProvider.EXAMPLE_USER_ID, null, UPDATE, FILTER, EXAMPLE_FILTER_ID);
 
+  }
+
+  @Test
+  public void testHalTaskQueryWithWrongFormatVariablesProperties() {
+    // mock properties with variable name list in wrong format
+    Map<String, Object> properties = new HashMap<String, Object>();
+    properties.put("variables", "foo");
+    Filter filter =  mockFilter().properties(properties).build();
+    when(filterServiceMock.getFilter(eq(EXAMPLE_FILTER_ID))).thenReturn(filter);
+
+    given()
+      .pathParam("id", EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+    .expect()
+      .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode())
+    .when()
+      .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
+
+    verify(filterServiceMock, times(1)).getFilter(eq(EXAMPLE_FILTER_ID));
+    verify(variableInstanceQueryMock, never()).variableScopeIdIn((String) anyVararg());
+    verify(variableInstanceQueryMock, never()).variableNameIn((String) anyVararg());
+    verify(variableInstanceQueryMock, never()).list();
+  }
+
+  @Test
+  public void testHalTaskQueryWithEmptyVariablesProperties() {
+    // mock properties with variable name list in wrong format
+    Map<String, Object> properties = new HashMap<String, Object>();
+    properties.put("variables", Collections.emptyList());
+    Filter filter =  mockFilter().properties(properties).build();
+    when(filterServiceMock.getFilter(eq(EXAMPLE_FILTER_ID))).thenReturn(filter);
+
+    given()
+      .pathParam("id", EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+      .body("_embedded", equalTo(null))
+    .when()
+      .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
+
+    verify(filterServiceMock, times(1)).getFilter(eq(EXAMPLE_FILTER_ID));
+    verify(variableInstanceQueryMock, never()).variableScopeIdIn((String) anyVararg());
+    verify(variableInstanceQueryMock, never()).variableNameIn((String) anyVararg());
+    verify(variableInstanceQueryMock, never()).list();
+  }
+
+  @Test
+  public void testHalTaskQueryWithVariableNotSetOnTask() {
+    // mock filter with variable names set
+    mockFilterWithVariableNames();
+
+    // mock resulting task
+    Task task = createTaskMock(TASK_A_ID, PROCESS_INSTANCE_A_ID, EXECUTION_A_ID, null, null);
+    when(filterServiceMock.singleResult(eq(EXAMPLE_FILTER_ID), any(Query.class))).thenReturn(task);
+
+    // mock variable instances
+    List<VariableInstance> variableInstances = Arrays.asList(
+      createExecutionVariableInstanceMock("foo", stringValue("execution"), EXECUTION_B_ID),
+      createExecutionVariableInstanceMock("execution", stringValue("bar"), EXECUTION_B_ID),
+      createTaskVariableInstanceMock("foo", stringValue("task"), TASK_B_ID),
+      createTaskVariableInstanceMock("task", stringValue("bar"), TASK_B_ID)
+    );
+    when(variableInstanceQueryMock.list()).thenReturn(variableInstances);
+
+    given()
+      .pathParam("id", EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+      .body("_embedded.containsKey('variable')", is(true))
+      .body("_embedded.variable.size", equalTo(0))
+    .when()
+      .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
+
+    verify(filterServiceMock, times(1)).getFilter(eq(EXAMPLE_FILTER_ID));
+    verify(variableInstanceQueryMock, times(1)).variableScopeIdIn((String) anyVararg());
+    verify(variableInstanceQueryMock).variableScopeIdIn(TASK_A_ID, EXECUTION_A_ID, PROCESS_INSTANCE_A_ID);
+    verify(variableInstanceQueryMock, times(1)).variableNameIn((String) anyVararg());
+    verify(variableInstanceQueryMock).variableNameIn("foo", "bar");
+    verify(variableInstanceQueryMock, times(1)).list();
+  }
+
+  @Test
+  public void testHalTaskQueryWithAdditionalVariables() {
+    // mock filter with variable names set
+    mockFilterWithVariableNames();
+
+    // mock resulting task
+    Task task = createTaskMock(TASK_A_ID, PROCESS_INSTANCE_A_ID, EXECUTION_A_ID, CASE_INSTANCE_A_ID, CASE_EXECUTION_A_ID);
+    when(filterServiceMock.singleResult(eq(EXAMPLE_FILTER_ID), any(Query.class))).thenReturn(task);
+
+    // mock variable instances
+    List<VariableInstance> variableInstances = Arrays.asList(
+      createProcessInstanceVariableInstanceMock("foo", stringValue("processInstance"), PROCESS_INSTANCE_A_ID),
+      createProcessInstanceVariableInstanceMock("processInstance", stringValue("bar"), PROCESS_INSTANCE_A_ID),
+      createExecutionVariableInstanceMock("foo", stringValue("execution"), EXECUTION_A_ID),
+      createExecutionVariableInstanceMock("execution", stringValue("bar"), EXECUTION_A_ID),
+      createTaskVariableInstanceMock("foo", stringValue("task"), TASK_A_ID),
+      createTaskVariableInstanceMock("task", stringValue("bar"), TASK_A_ID),
+      createCaseInstanceVariableInstanceMock("foo", stringValue("caseInstance"), CASE_INSTANCE_A_ID),
+      createCaseInstanceVariableInstanceMock("caseInstance", stringValue("bar"), CASE_INSTANCE_A_ID),
+      createCaseExecutionVariableInstanceMock("foo", stringValue("caseExecution"), CASE_EXECUTION_A_ID),
+      createCaseExecutionVariableInstanceMock("caseExecution", stringValue("bar"), CASE_EXECUTION_A_ID)
+    );
+    when(variableInstanceQueryMock.list()).thenReturn(variableInstances);
+
+    Response response = given()
+      .pathParam("id", EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+      .body("_embedded.containsKey('variable')", is(true))
+      .body("_embedded.variable.size", equalTo(6))
+    .when()
+      .get(EXECUTE_SINGLE_RESULT_FILTER_URL);
+
+    verify(filterServiceMock, times(1)).getFilter(eq(EXAMPLE_FILTER_ID));
+    verify(variableInstanceQueryMock, times(1)).variableScopeIdIn((String) anyVararg());
+    verify(variableInstanceQueryMock).variableScopeIdIn(TASK_A_ID, EXECUTION_A_ID, PROCESS_INSTANCE_A_ID, CASE_EXECUTION_A_ID, CASE_INSTANCE_A_ID);
+    verify(variableInstanceQueryMock, times(1)).variableNameIn((String) anyVararg());
+    verify(variableInstanceQueryMock).variableNameIn("foo", "bar");
+    verify(variableInstanceQueryMock, times(1)).list();
+
+    String content = response.asString();
+    List<Map<String, Object>> variables = from(content).getJsonObject("_embedded.variable");
+
+    // task variable 'foo'
+    verifyTaskVariableValue(variables.get(0), "foo", "task", TASK_A_ID);
+    // task variable 'task'
+    verifyTaskVariableValue(variables.get(1), "task", "bar", TASK_A_ID);
+    // execution variable 'execution'
+    verifyExecutionVariableValue(variables.get(2), "execution", "bar", EXECUTION_A_ID);
+    // process instance variable 'processInstance'
+    verifyProcessInstanceVariableValue(variables.get(3), "processInstance", "bar", PROCESS_INSTANCE_A_ID);
+    // caseExecution variable 'caseExecution'
+    verifyCaseExecutionVariableValue(variables.get(4), "caseExecution", "bar", CASE_EXECUTION_A_ID);
+    // case instance variable 'caseInstance'
+    verifyCaseInstanceVariableValue(variables.get(5), "caseInstance", "bar", CASE_INSTANCE_A_ID);
+  }
+
+  @Test
+  public void testHalTaskListQueryWithAdditionalVariables() {
+    // mock filter with variable names set
+    mockFilterWithVariableNames();
+
+    // mock resulting task
+    List<Task> tasks = Arrays.asList(
+      createTaskMock(TASK_A_ID, PROCESS_INSTANCE_A_ID, EXECUTION_A_ID, null, null),
+      createTaskMock(TASK_B_ID, PROCESS_INSTANCE_A_ID, EXECUTION_B_ID, null, null),
+      createTaskMock(TASK_C_ID, null, null, CASE_INSTANCE_A_ID, CASE_EXECUTION_A_ID)
+    );
+    when(filterServiceMock.list(eq(EXAMPLE_FILTER_ID), any(Query.class))).thenReturn(tasks);
+
+    // mock variable instances
+    List<VariableInstance> variableInstances = Arrays.asList(
+      createProcessInstanceVariableInstanceMock("foo", stringValue(PROCESS_INSTANCE_A_ID), PROCESS_INSTANCE_A_ID),
+      createProcessInstanceVariableInstanceMock(PROCESS_INSTANCE_A_ID, stringValue("bar"), PROCESS_INSTANCE_A_ID),
+      createExecutionVariableInstanceMock("foo", stringValue(EXECUTION_A_ID), EXECUTION_A_ID),
+      createExecutionVariableInstanceMock(EXECUTION_A_ID, stringValue("bar"), EXECUTION_A_ID),
+      createExecutionVariableInstanceMock("foo", stringValue(EXECUTION_B_ID), EXECUTION_B_ID),
+      createExecutionVariableInstanceMock(EXECUTION_B_ID, stringValue("bar"), EXECUTION_B_ID),
+      createTaskVariableInstanceMock("foo", stringValue(TASK_A_ID), TASK_A_ID),
+      createTaskVariableInstanceMock(TASK_A_ID, stringValue("bar"), TASK_A_ID),
+      createTaskVariableInstanceMock("foo", stringValue(TASK_B_ID), TASK_B_ID),
+      createTaskVariableInstanceMock(TASK_B_ID, stringValue("bar"), TASK_B_ID),
+      createTaskVariableInstanceMock("foo", stringValue(TASK_C_ID), TASK_C_ID),
+      createTaskVariableInstanceMock(TASK_C_ID, stringValue("bar"), TASK_C_ID),
+      createCaseInstanceVariableInstanceMock("foo", stringValue(CASE_INSTANCE_A_ID), CASE_INSTANCE_A_ID),
+      createCaseInstanceVariableInstanceMock(CASE_INSTANCE_A_ID, stringValue("bar"), CASE_INSTANCE_A_ID),
+      createCaseExecutionVariableInstanceMock("foo", stringValue(CASE_EXECUTION_A_ID), CASE_EXECUTION_A_ID),
+      createCaseExecutionVariableInstanceMock(CASE_EXECUTION_A_ID, stringValue("bar"), CASE_EXECUTION_A_ID)
+    );
+    when(variableInstanceQueryMock.list()).thenReturn(variableInstances);
+
+    Response response = given()
+      .pathParam("id", EXAMPLE_FILTER_ID)
+      .header(ACCEPT_HAL_HEADER)
+    .expect()
+      .statusCode(Status.OK.getStatusCode())
+      .body("_embedded.task.size", equalTo(3))
+      .body("_embedded.task.any { it._embedded.containsKey('variable') }", is(true))
+    .when()
+      .get(EXECUTE_LIST_FILTER_URL);
+
+    verify(filterServiceMock, times(1)).getFilter(eq(EXAMPLE_FILTER_ID));
+    verify(variableInstanceQueryMock, times(1)).variableScopeIdIn((String) anyVararg());
+    verify(variableInstanceQueryMock).variableScopeIdIn(TASK_A_ID, EXECUTION_A_ID, PROCESS_INSTANCE_A_ID, TASK_B_ID, EXECUTION_B_ID, TASK_C_ID, CASE_EXECUTION_A_ID, CASE_INSTANCE_A_ID);
+    verify(variableInstanceQueryMock, times(1)).variableNameIn((String) anyVararg());
+    verify(variableInstanceQueryMock).variableNameIn("foo", "bar");
+    verify(variableInstanceQueryMock, times(1)).list();
+
+    String content = response.asString();
+    List<Map<String, Object>> taskList = from(content).getList("_embedded.task");
+
+    // task A
+    List<Map<String, Object>> variables = getEmbeddedTaskVariables(taskList.get(0));
+    assertThat(variables).hasSize(4);
+
+    // task variable 'foo'
+    verifyTaskVariableValue(variables.get(0), "foo", TASK_A_ID, TASK_A_ID);
+    // task variable 'taskA'
+    verifyTaskVariableValue(variables.get(1), TASK_A_ID, "bar", TASK_A_ID);
+    // execution variable 'executionA'
+    verifyExecutionVariableValue(variables.get(2), EXECUTION_A_ID, "bar", EXECUTION_A_ID);
+    // process instance variable 'processInstanceA'
+    verifyProcessInstanceVariableValue(variables.get(3), PROCESS_INSTANCE_A_ID, "bar", PROCESS_INSTANCE_A_ID);
+
+    // task B
+    variables = getEmbeddedTaskVariables(taskList.get(1));
+    assertThat(variables).hasSize(4);
+
+    // task variable 'foo'
+    verifyTaskVariableValue(variables.get(0), "foo", TASK_B_ID, TASK_B_ID);
+    // task variable 'taskA'
+    verifyTaskVariableValue(variables.get(1), TASK_B_ID, "bar", TASK_B_ID);
+    // execution variable 'executionA'
+    verifyExecutionVariableValue(variables.get(2), EXECUTION_B_ID, "bar", EXECUTION_B_ID);
+    // process instance variable 'processInstanceA'
+    verifyProcessInstanceVariableValue(variables.get(3), PROCESS_INSTANCE_A_ID, "bar", PROCESS_INSTANCE_A_ID);
+
+    // task C
+    variables = getEmbeddedTaskVariables(taskList.get(2));
+    assertThat(variables).hasSize(4);
+
+    // task variable 'foo'
+    verifyTaskVariableValue(variables.get(0), "foo", TASK_C_ID, TASK_C_ID);
+    // task variable 'taskC'
+    verifyTaskVariableValue(variables.get(1), TASK_C_ID, "bar", TASK_C_ID);
+    // case execution variable 'caseExecutionA'
+    verifyCaseExecutionVariableValue(variables.get(2), CASE_EXECUTION_A_ID, "bar", CASE_EXECUTION_A_ID);
+    // case instance variable 'caseInstanceA'
+    verifyCaseInstanceVariableValue(variables.get(3), CASE_INSTANCE_A_ID, "bar", CASE_INSTANCE_A_ID);
+
+  }
+
+  @SuppressWarnings("unchecked")
+  protected List<Map<String, Object>> getEmbeddedTaskVariables(Map<String, Object> task) {
+    Map<String, Object> embedded = (Map<String, Object>) task.get("_embedded");
+    assertThat(embedded).isNotNull();
+    return (List<Map<String, Object>>) embedded.get("variable");
+  }
+
+  protected Filter mockFilterWithVariableNames() {
+    // mock properties with variable name list (names are ignored but variable names list must not be empty)
+    List<Map<String, String>> variables = new ArrayList<Map<String, String>>();
+    Map<String, String> foo = new HashMap<String, String>();
+    foo.put("name", "foo");
+    foo.put("label", "Foo");
+    variables.add(foo);
+    Map<String, String> bar = new HashMap<String, String>();
+    bar.put("name", "bar");
+    bar.put("label", "Bar");
+    variables.add(bar);
+
+    Map<String, Object> properties = new HashMap<String, Object>();
+    properties.put("variables", variables);
+
+    Filter filter = mockFilter().properties(properties).build();
+    when(filterServiceMock.getFilter(eq(EXAMPLE_FILTER_ID))).thenReturn(filter);
+
+    return filter;
+  }
+
+  protected Task createTaskMock(String taskId, String processInstanceId, String executionId, String caseInstanceId, String caseExecutionId) {
+    return new MockTaskBuilder()
+      .id(taskId)
+      .processInstanceId(processInstanceId)
+      .executionId(executionId)
+      .caseInstanceId(caseInstanceId)
+      .caseExecutionId(caseExecutionId)
+      .build();
+  }
+
+  protected VariableInstance createTaskVariableInstanceMock(String name, TypedValue value, String taskId) {
+    return createVariableInstanceMock(name, value, taskId, null, null, null, null);
+  }
+
+  protected VariableInstance createExecutionVariableInstanceMock(String name, TypedValue value, String executionId) {
+    return createVariableInstanceMock(name, value, null, executionId, null, null, null);
+  }
+
+  protected VariableInstance createProcessInstanceVariableInstanceMock(String name, TypedValue value, String processInstanceId) {
+    return createVariableInstanceMock(name, value, null, processInstanceId, processInstanceId, null, null);
+  }
+
+  protected VariableInstance createCaseExecutionVariableInstanceMock(String name, TypedValue value, String caseExecutionId) {
+    return createVariableInstanceMock(name, value, null, null, null, caseExecutionId, null);
+  }
+
+  protected VariableInstance createCaseInstanceVariableInstanceMock(String name, TypedValue value, String caseInstanceId) {
+    return createVariableInstanceMock(name, value, null, null, null, caseInstanceId, caseInstanceId);
+  }
+
+  protected VariableInstance createVariableInstanceMock(String name, TypedValue value, String taskId, String executionId, String processInstanceId, String caseExecutionId, String caseInstanceId) {
+    return mockVariableInstance().name(name).typedValue(value).taskId(taskId)
+      .executionId(executionId).processInstanceId(processInstanceId).caseExecutionId(caseExecutionId).caseInstanceId(caseInstanceId)
+      .buildEntity();
+  }
+
+  protected void verifyTaskVariableValue(Map<String, Object> variable, String name, String value, String taskId) {
+    verifyVariableValue(variable, name, value, TaskRestService.PATH, taskId, "localVariables");
+  }
+
+  protected void verifyExecutionVariableValue(Map<String, Object> variable, String name, String value, String executionId) {
+    verifyVariableValue(variable, name, value, ExecutionRestService.PATH, executionId, "localVariables");
+  }
+
+  protected void verifyCaseExecutionVariableValue(Map<String, Object> variable, String name, String value, String caseExecutionId) {
+    verifyVariableValue(variable, name, value, CaseExecutionRestService.PATH, caseExecutionId, "localVariables");
+  }
+
+  protected void verifyProcessInstanceVariableValue(Map<String, Object> variable, String name, String value, String processInstanceId) {
+    verifyVariableValue(variable, name, value, ProcessInstanceRestService.PATH, processInstanceId, "variables");
+  }
+
+  protected void verifyCaseInstanceVariableValue(Map<String, Object> variable, String name, String value, String caseInstanceId) {
+    verifyVariableValue(variable, name, value, CaseInstanceRestService.PATH, caseInstanceId, "variables");
+  }
+
+  @SuppressWarnings("unchecked")
+  protected void verifyVariableValue(Map<String, Object> variable, String name, String value, String scopeResourcePath, String scopeId, String variablesName) {
+    assertThat(variable.get("name")).isEqualTo(name);
+    assertThat(variable.get("value")).isEqualTo(value);
+    assertThat(variable.get("type")).isEqualTo(ValueType.STRING.getName());
+    assertThat(variable.get("valueInfo")).isNull();
+    assertThat(variable.get("_embedded")).isNull();
+    Map<String, Map<String, String>> links = (Map<String, Map<String, String>>) variable.get("_links");
+    assertThat(links).hasSize(1);
+    assertThat(links.get("self")).hasSize(1);
+    assertThat(links.get("self").get("href")).isEqualTo(scopeResourcePath + "/" + scopeId + "/" + variablesName + "/" + name);
   }
 
 }

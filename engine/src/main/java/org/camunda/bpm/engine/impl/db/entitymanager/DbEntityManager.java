@@ -12,16 +12,45 @@
  */
 package org.camunda.bpm.engine.impl.db.entitymanager;
 
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.DELETED_MERGED;
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.DELETED_PERSISTENT;
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.DELETED_TRANSIENT;
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.MERGED;
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.PERSISTENT;
+import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.TRANSIENT;
+import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.DELETE;
+import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.DELETE_BULK;
+import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.INSERT;
+import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.UPDATE;
+import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.UPDATE_BULK;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.camunda.bpm.engine.OptimisticLockingException;
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.*;
+import org.camunda.bpm.engine.impl.DeploymentQueryImpl;
+import org.camunda.bpm.engine.impl.ExecutionQueryImpl;
+import org.camunda.bpm.engine.impl.GroupQueryImpl;
+import org.camunda.bpm.engine.impl.HistoricActivityInstanceQueryImpl;
+import org.camunda.bpm.engine.impl.HistoricDetailQueryImpl;
+import org.camunda.bpm.engine.impl.HistoricProcessInstanceQueryImpl;
+import org.camunda.bpm.engine.impl.HistoricTaskInstanceQueryImpl;
+import org.camunda.bpm.engine.impl.HistoricVariableInstanceQueryImpl;
+import org.camunda.bpm.engine.impl.JobQueryImpl;
+import org.camunda.bpm.engine.impl.Page;
+import org.camunda.bpm.engine.impl.ProcessDefinitionQueryImpl;
+import org.camunda.bpm.engine.impl.ProcessInstanceQueryImpl;
+import org.camunda.bpm.engine.impl.TaskQueryImpl;
+import org.camunda.bpm.engine.impl.UserQueryImpl;
 import org.camunda.bpm.engine.impl.cfg.IdGenerator;
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionQueryImpl;
+import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.DbEntityLifecycleAware;
 import org.camunda.bpm.engine.impl.db.ListQueryParameterObject;
@@ -29,13 +58,15 @@ import org.camunda.bpm.engine.impl.db.PersistenceSession;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.CachedDbEntity;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityCache;
 import org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState;
-import org.camunda.bpm.engine.impl.db.entitymanager.operation.*;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationManager;
+import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType;
 import org.camunda.bpm.engine.impl.identity.db.DbGroupQueryImpl;
 import org.camunda.bpm.engine.impl.identity.db.DbUserQueryImpl;
 import org.camunda.bpm.engine.impl.interceptor.Session;
-
-import static org.camunda.bpm.engine.impl.db.entitymanager.cache.DbEntityState.*;
-import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperationType.*;
+import org.camunda.bpm.engine.impl.jobexecutor.JobExecutorContext;
 
 /**
  *
@@ -46,6 +77,8 @@ import static org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation
 public class DbEntityManager implements Session {
 
   private static Logger log = Logger.getLogger(DbEntityManager.class.getName());
+
+  protected List<OptimisticLockingListener> optimisticLockingListeners;
 
   protected IdGenerator idGenerator;
 
@@ -58,8 +91,38 @@ public class DbEntityManager implements Session {
   public DbEntityManager(IdGenerator idGenerator, PersistenceSession persistenceSession) {
     this.idGenerator = idGenerator;
     this.persistenceSession = persistenceSession;
-    dbEntityCache = new DbEntityCache();
+    initializeEntityCache();
+    initializeOperationManager();
+  }
+
+  protected void initializeOperationManager() {
     dbOperationManager = new DbOperationManager();
+  }
+
+  protected void initializeEntityCache() {
+
+    final JobExecutorContext jobExecutorContext = Context.getJobExecutorContext();
+    final ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
+
+    if(processEngineConfiguration != null
+        && processEngineConfiguration.isDbEntityCacheReuseEnabled()
+        && jobExecutorContext != null) {
+
+      dbEntityCache = jobExecutorContext.getEntityCache();
+      if(dbEntityCache == null) {
+        dbEntityCache = new DbEntityCache(processEngineConfiguration.getDbEntityCacheKeyMapping());
+        jobExecutorContext.setEntityCache(dbEntityCache);
+      }
+
+    } else {
+
+      if (processEngineConfiguration != null) {
+        dbEntityCache = new DbEntityCache(processEngineConfiguration.getDbEntityCacheKeyMapping());
+      } else {
+        dbEntityCache = new DbEntityCache();
+      }
+    }
+
   }
 
   // selects /////////////////////////////////////////////////
@@ -200,8 +263,29 @@ public class DbEntityManager implements Session {
     // execute the flush
     for (DbOperation dbOperation : operationsToFlush) {
       persistenceSession.executeDbOperation(dbOperation);
+      if(dbOperation.isFailed()) {
+        handleOptimisticLockingException(dbOperation);
+      }
     }
 
+  }
+
+  protected void handleOptimisticLockingException(DbOperation dbOperation) {
+    boolean isHandled = false;
+
+    if(optimisticLockingListeners != null) {
+      for (OptimisticLockingListener optimisticLockingListener : optimisticLockingListeners) {
+        if(optimisticLockingListener.getEntityType() == null
+            || optimisticLockingListener.getEntityType().isAssignableFrom(dbOperation.getEntityType())) {
+          optimisticLockingListener.failedOperation(dbOperation);
+          isHandled = true;
+        }
+      }
+    }
+
+    if(!isHandled) {
+      throw new OptimisticLockingException("Could not execute "+dbOperation + ". Entity was updated by another transaction concurrently");
+    }
   }
 
   /**
@@ -218,7 +302,7 @@ public class DbEntityManager implements Session {
         // mark PERSISTENT
         cachedDbEntity.setEntityState(PERSISTENT);
 
-      } else if(cachedDbEntity.isDirty()) {
+      } else if(cachedDbEntity.getEntityState() == PERSISTENT && cachedDbEntity.isDirty()) {
         // object is dirty -> perform UPDATE
         performEntityOperation(cachedDbEntity, UPDATE);
 
@@ -247,6 +331,15 @@ public class DbEntityManager implements Session {
         cachedDbEntity.makeCopy();
       }
     }
+
+    // log cache state after flush
+    if(log.isLoggable(Level.FINEST)) {
+      log.finest("cache state after flush: ");
+      cachedEntities = dbEntityCache.getCachedEntities();
+      for (CachedDbEntity cachedDbEntity : cachedEntities) {
+        log.finest("  "+cachedDbEntity);
+      }
+    }
   }
 
   public void insert(DbEntity dbEntity) {
@@ -270,6 +363,13 @@ public class DbEntityManager implements Session {
     // optimistic locking results in a conflict.
 
     dbEntityCache.putMerged(dbEntity);
+  }
+
+  public void forceUpdate(DbEntity entity) {
+    CachedDbEntity cachedEntity = dbEntityCache.getCachedEntity(entity);
+    if(cachedEntity != null && cachedEntity.getEntityState() == PERSISTENT) {
+      cachedEntity.forceSetDirty();
+    }
   }
 
   public void delete(DbEntity dbEntity) {
@@ -412,5 +512,12 @@ public class DbEntityManager implements Session {
 
   public GroupQueryImpl createGroupQuery() {
     return new DbGroupQueryImpl();
+  }
+
+  public void registerOptimisticLockingListener(OptimisticLockingListener optimisticLockingListener) {
+    if(optimisticLockingListeners == null) {
+      optimisticLockingListeners = new ArrayList<OptimisticLockingListener>();
+    }
+    optimisticLockingListeners.add(optimisticLockingListener);
   }
 }

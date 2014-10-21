@@ -39,5 +39,4 @@ public class TaskEntityVariableStore extends AbstractPersistentVariableStore {
   protected void initializeVariableInstanceBackPointer(VariableInstanceEntity variableInstance) {
     taskEntity.initializeVariableInstanceBackPointer(variableInstance);
   }
-
 }

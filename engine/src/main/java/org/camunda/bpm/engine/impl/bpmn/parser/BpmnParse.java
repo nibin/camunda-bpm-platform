@@ -585,7 +585,11 @@ public class BpmnParse extends Parse {
     for (Element postponedElement : postponedElements.values()) {
       if(parentScope.findActivity(postponedElement.attribute("id")) == null) { // check whether activity is already parsed
         if(postponedElement.getTagName().equals("intermediateCatchEvent")) {
-          parseIntermediateCatchEvent(postponedElement, parentScope, false);
+          ActivityImpl activity = parseIntermediateCatchEvent(postponedElement, parentScope, false);
+
+          if (activity != null) {
+            parseActivityInputOutput(postponedElement, activity);
+          }
         }
       }
     }
@@ -708,6 +712,8 @@ public class BpmnParse extends Parse {
       } else {
         parseScopeStartEvent(startEventActivity, startEventElement, parentElement, scope);
       }
+
+      ensureNoIoMappingDefined(startEventElement);
 
       for (BpmnParseListener parseListener : parseListeners) {
         parseListener.parseStartEvent(startEventElement, scope, startEventActivity);
@@ -1084,6 +1090,8 @@ public class BpmnParse extends Parse {
     // shared by all events except for link event
     IntermediateCatchEventActivityBehavior defaultCatchBehaviour = new IntermediateCatchEventActivityBehavior(isAfterEventBasedGateway);
 
+    parseAsynchronousContinuation(intermediateEventElement, nestedActivity);
+
     if(isAfterEventBasedGateway) {
       nestedActivity.setCancelScope(true);
       nestedActivity.setScope(scopeElement.getParentScope());
@@ -1185,6 +1193,8 @@ public class BpmnParse extends Parse {
 
     ActivityImpl nestedActivityImpl = createActivityOnScope(intermediateEventElement, scopeElement);
     ActivityBehavior activityBehavior = null;
+
+    parseAsynchronousContinuation(intermediateEventElement, nestedActivityImpl);
 
     if(signalEventDefinitionElement != null) {
       nestedActivityImpl.setProperty("type", "intermediateSignalThrow");
@@ -1430,6 +1440,8 @@ public class BpmnParse extends Parse {
     ActivityImpl activity = createActivityOnScope(exclusiveGwElement, scope);
     activity.setActivityBehavior(new ExclusiveGatewayActivityBehavior());
 
+    parseAsynchronousContinuation(exclusiveGwElement, activity);
+
     parseExecutionListenersOnScope(exclusiveGwElement, activity);
 
     for (BpmnParseListener parseListener : parseListeners) {
@@ -1445,6 +1457,8 @@ public class BpmnParse extends Parse {
     ActivityImpl activity = createActivityOnScope(inclusiveGwElement, scope);
     activity.setActivityBehavior(new InclusiveGatewayActivityBehavior());
 
+    parseAsynchronousContinuation(inclusiveGwElement, activity);
+
     parseExecutionListenersOnScope(inclusiveGwElement, activity);
 
     for (BpmnParseListener parseListener : parseListeners) {
@@ -1457,6 +1471,12 @@ public class BpmnParse extends Parse {
     ActivityImpl activity = createActivityOnScope(eventBasedGwElement, scope);
     activity.setActivityBehavior(new EventBasedGatewayActivityBehavior());
     activity.setScope(true);
+
+    parseAsynchronousContinuation(eventBasedGwElement, activity);
+
+    if(activity.isAsyncAfter()) {
+      addError("'asyncAfter' not supported for " + eventBasedGwElement.getTagName() + " elements.", eventBasedGwElement);
+    }
 
     parseExecutionListenersOnScope(eventBasedGwElement, activity);
 
@@ -1979,6 +1999,8 @@ public class BpmnParse extends Parse {
     ActivityImpl activity = createActivityOnScope(manualTaskElement, scope);
     activity.setActivityBehavior(new ManualTaskActivityBehavior());
 
+    parseAsynchronousContinuation(manualTaskElement, activity);
+
     parseExecutionListenersOnScope(manualTaskElement, activity);
 
     for (BpmnParseListener parseListener : parseListeners) {
@@ -2346,6 +2368,12 @@ public class BpmnParse extends Parse {
         activity.setActivityBehavior(new NoneEndEventActivityBehavior());
       }
 
+      if(activity != null) {
+        parseActivityInputOutput(endEventElement, activity);
+      }
+
+      parseAsynchronousContinuation(endEventElement, activity);
+
       for (BpmnParseListener parseListener : parseListeners) {
         parseListener.parseEndEvent(endEventElement, scope, activity);
       }
@@ -2394,7 +2422,7 @@ public class BpmnParse extends Parse {
       ActivityImpl nestedActivity = createActivityOnScope(boundaryEventElement, parentActivity);
 
       String cancelActivity = boundaryEventElement.attribute("cancelActivity", "true");
-      boolean interrupting = cancelActivity.equals("true") ? true : false;
+      boolean interrupting = cancelActivity.equals("true");
 
       // Catch event behavior is the same for most types
       ActivityBehavior behavior = null;
@@ -2432,6 +2460,8 @@ public class BpmnParse extends Parse {
         addError("Unsupported boundary event type", boundaryEventElement);
 
       }
+
+      ensureNoIoMappingDefined(boundaryEventElement);
 
       for (BpmnParseListener parseListener : parseListeners) {
         parseListener.parseBoundaryEvent(boundaryEventElement, scopeElement, nestedActivity);
@@ -3433,26 +3463,72 @@ public class BpmnParse extends Parse {
     if(extensionElements != null) {
       IoMapping inputOutput = parseInputOutput(extensionElements);
       if(inputOutput != null) {
-        if(!isActivityInputOutputSupported(activityElement.getTagName())) {
-          addError("camunda:inputOutput mapping unsupported for element type '"+activityElement.getTagName()+"'.", activityElement);
+        if(checkActivityInputOutputSupported(activityElement, activity, inputOutput)) {
 
-        } else {
-          activity.setIoMapping(inputOutput);
-          // turn activity into a scope (->local scope for variables) unless it is an event subprocess
-          if(!activityElement.getTagName().equals("subprocess")
-              && !parseBooleanAttribute(activityElement.attribute(PROPERTYNAME_TRIGGERED_BY_EVENT), false)) {
-            activity.setScope(true);
+          if (activity.getActivityBehavior() instanceof MultiInstanceActivityBehavior) {
+            MultiInstanceActivityBehavior behavior = (MultiInstanceActivityBehavior) activity.getActivityBehavior();
+            behavior.setIoMapping(inputOutput);
+
+          } else {
+            activity.setIoMapping(inputOutput);
+
           }
+
+          // turn activity into a scope (->local scope for variables)
+          activity.setScope(true);
         }
       }
     }
   }
 
-  public static boolean isActivityInputOutputSupported(String tagName) {
-    return tagName.contains("Task") ||
+  protected boolean checkActivityInputOutputSupported(Element activityElement, ActivityImpl activity, IoMapping inputOutput) {
+    String tagName = activityElement.getTagName();
+
+    if (!(tagName.contains("Task") ||
            tagName.contains("Event") ||
            tagName.equals("transaction") ||
-           tagName.equals("subProcess");
+           tagName.equals("subProcess"))) {
+      addError("camunda:inputOutput mapping unsupported for element type '" + tagName + "'.", activityElement);
+      return false;
+    }
+
+    if (tagName.equals("subProcess") && "true".equals(activityElement.attribute("triggeredByEvent"))) {
+      addError("camunda:inputOutput mapping unsupported for element type '" + tagName + "' with attribute 'triggeredByEvent = true'.", activityElement);
+      return false;
+    }
+
+    if (!inputOutput.getOutputParameters().isEmpty()) {
+      return checkActivityOutputParameterSupported(activityElement, activity);
+    }
+    else {
+      return true;
+    }
+  }
+
+  protected boolean checkActivityOutputParameterSupported(Element activityElement, ActivityImpl activity) {
+    String tagName = activityElement.getTagName();
+
+    if (tagName.equals("endEvent")) {
+      addError("camunda:outputParameter not allowed for element type '" + tagName + "'.", activityElement);
+      return true;
+    }
+    else if (activity.getActivityBehavior() instanceof MultiInstanceActivityBehavior) {
+      addError("camunda:outputParameter not allowed for multi-instance constructs", activityElement);
+      return false;
+    }
+    else {
+      return true;
+    }
+  }
+
+  protected void ensureNoIoMappingDefined(Element element) {
+    Element extensionElements = element.element("extensionElements");
+    if(extensionElements != null) {
+      IoMapping inputOutput = parseInputOutput(extensionElements);
+      if (inputOutput != null) {
+        addError("camunda:inputOutput mapping unsupported for element type '" + element.getTagName() + "'.", element);
+      }
+    }
   }
 
   protected IoMapping parseInputOutput(Element element) {

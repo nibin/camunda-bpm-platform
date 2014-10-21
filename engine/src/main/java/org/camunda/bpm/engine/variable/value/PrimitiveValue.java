@@ -21,8 +21,6 @@ import org.camunda.bpm.engine.variable.type.PrimitiveValueType;
  */
 public interface PrimitiveValue<T> extends TypedValue {
 
-  T setValue(T value);
-
   T getValue();
 
   PrimitiveValueType getType();

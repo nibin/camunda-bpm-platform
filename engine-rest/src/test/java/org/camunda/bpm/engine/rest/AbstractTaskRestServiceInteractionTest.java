@@ -66,6 +66,7 @@ import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.FormService;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ManagementService;
+import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.TaskService;
@@ -1547,15 +1548,21 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
 
   @Test
   public void testAddCompleteTaskComment() {
+    Map<String, Object> json = new HashMap<String, Object>();
+    json.put("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
 
     Response response = given()
       .pathParam("id", EXAMPLE_TASK_ID)
-      .multiPart("message", "aTaskCommentFullMessage")
       .header("accept", MediaType.APPLICATION_JSON)
+      .contentType(ContentType.JSON)
+      .body(json)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
+      .contentType(ContentType.JSON)
     .when()
       .post(SINGLE_TASK_ADD_COMMENT_URL);
+
+    verify(taskServiceMock).addComment(EXAMPLE_TASK_ID, null, EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
 
     verifyCreatedTaskComment(mockTaskComment, response);
   }
@@ -1565,9 +1572,13 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
 
     mockHistoryDisabled();
 
+    Map<String, Object> json = new HashMap<String, Object>();
+    json.put("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
+
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
-      .multiPart("message", "aTaskCommentFullMessage")
+      .contentType(ContentType.JSON)
+      .body(json)
       .header("accept", MediaType.APPLICATION_JSON)
     .then().expect()
       .statusCode(Status.FORBIDDEN.getStatusCode())
@@ -1581,9 +1592,13 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
     when(historicTaskInstanceQueryMock.taskId(eq(NON_EXISTING_ID))).thenReturn(historicTaskInstanceQueryMock);
     when(historicTaskInstanceQueryMock.singleResult()).thenReturn(null);
 
+    Map<String, Object> json = new HashMap<String, Object>();
+    json.put("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
+
     given()
       .pathParam("id", NON_EXISTING_ID)
-      .multiPart("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE)
+      .contentType(ContentType.JSON)
+      .body(json)
       .header("accept", MediaType.APPLICATION_JSON)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
@@ -1596,9 +1611,13 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
   public void testAddCommentToNonExistingTaskWithHistoryDisabled() {
     mockHistoryDisabled();
 
+    Map<String, Object> json = new HashMap<String, Object>();
+    json.put("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
+
     given()
       .pathParam("id", NON_EXISTING_ID)
-      .multiPart("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE)
+      .contentType(ContentType.JSON)
+      .body(json)
       .header("accept", MediaType.APPLICATION_JSON)
     .then().expect()
       .statusCode(Status.FORBIDDEN.getStatusCode())
@@ -1608,7 +1627,7 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
   }
 
   @Test
-  public void testAddTaskCommentWithoutMultiparts() {
+  public void testAddTaskCommentWithoutBody() {
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
       .header("accept", MediaType.APPLICATION_JSON)
@@ -1625,7 +1644,8 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
 
     given()
       .pathParam("id", EXAMPLE_TASK_ID)
-      .multiPart("nonExistingPart", "test")
+      .contentType(ContentType.JSON)
+      .body(EMPTY_JSON_OBJECT)
       .header("accept", MediaType.APPLICATION_JSON)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())

@@ -14,6 +14,7 @@
 package org.camunda.bpm.engine.test.history;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -22,6 +23,7 @@ import java.util.List;
 import org.apache.commons.lang.time.DateUtils;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.exception.NotValidException;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.history.HistoricProcessInstanceQuery;
 import org.camunda.bpm.engine.impl.history.event.HistoricProcessInstanceEventEntity;
@@ -278,6 +280,15 @@ public class HistoricProcessInstanceTest extends PluggableProcessEngineTestCase 
     exludeIds.add("oneTaskProcess");
     assertEquals(0, historyService.createHistoricProcessInstanceQuery().processDefinitionKeyNotIn(exludeIds).count());
 
+    try {
+      // oracle handles empty string like null which seems to lead to undefined behavior of the LIKE comparison
+      historyService.createHistoricProcessInstanceQuery().processDefinitionKeyNotIn(Arrays.asList(""));
+      fail("Exception expected");
+    }
+    catch (NotValidException e) {
+      // expected
+    }
+
     // After finishing process
     taskService.complete(taskService.createTaskQuery().processInstanceId(processInstance.getId()).singleResult().getId());
     assertEquals(1, historyService.createHistoricProcessInstanceQuery().finished().count());
@@ -318,6 +329,17 @@ public class HistoricProcessInstanceTest extends PluggableProcessEngineTestCase 
     assertEquals(1, historyService.createHistoricProcessInstanceQuery().orderByProcessInstanceDuration().desc().count());
     assertEquals(1, historyService.createHistoricProcessInstanceQuery().orderByProcessDefinitionId().desc().count());
     assertEquals(1, historyService.createHistoricProcessInstanceQuery().orderByProcessInstanceBusinessKey().desc().count());
+  }
+  
+  @Deployment(resources = {"org/camunda/bpm/engine/test/api/runtime/superProcess.bpmn20.xml", 
+      "org/camunda/bpm/engine/test/api/runtime/subProcess.bpmn20.xml"})
+  public void testHistoricProcessInstanceSubProcess() {
+    ProcessInstance superPi = runtimeService.startProcessInstanceByKey("subProcessQueryTest");    
+    ProcessInstance subPi = runtimeService.createProcessInstanceQuery().superProcessInstanceId(superPi.getProcessInstanceId()).singleResult();
+    
+    HistoricProcessInstance historicProcessInstance = historyService.createHistoricProcessInstanceQuery().subProcessInstanceId(subPi.getProcessInstanceId()).singleResult();
+    assertNotNull(historicProcessInstance);
+    assertEquals(historicProcessInstance.getId(), superPi.getId());
   }
 
   public void testInvalidSorting() {
@@ -616,7 +638,7 @@ public class HistoricProcessInstanceTest extends PluggableProcessEngineTestCase 
     assertEquals(caseInstanceId, secondInstance.getCaseInstanceId());
 
   }
-
+ 
   @Deployment(resources = "org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml")
   public void testStartByIdWithCaseInstanceId() {
     String processDefinitionId = repositoryService

@@ -40,7 +40,9 @@ import org.camunda.bpm.engine.impl.db.HasDbReferences;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.event.CompensationEventHandler;
+import org.camunda.bpm.engine.impl.history.HistoryLevel;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
+import org.camunda.bpm.engine.impl.history.event.HistoryEventTypes;
 import org.camunda.bpm.engine.impl.history.handler.HistoryEventHandler;
 import org.camunda.bpm.engine.impl.history.producer.HistoryEventProducer;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
@@ -195,8 +197,6 @@ public class ExecutionEntity extends PvmExecutionImpl implements
    */
   protected String superCaseExecutionId;
 
-  protected boolean forcedUpdate;
-
   public ExecutionEntity() {
 
   }
@@ -293,8 +293,8 @@ public class ExecutionEntity extends PvmExecutionImpl implements
     }
 
     ProcessEngineConfigurationImpl configuration = Context.getProcessEngineConfiguration();
-    int historyLevel = configuration.getHistoryLevel();
-    if (historyLevel>=ProcessEngineConfigurationImpl.HISTORYLEVEL_ACTIVITY) {
+    HistoryLevel historyLevel = configuration.getHistoryLevel();
+    if (historyLevel.isHistoryEventProduced(HistoryEventTypes.ACTIVITY_INSTANCE_UPDATE, this)) {
 
       final HistoryEventProducer eventFactory = configuration.getHistoryEventProducer();
       final HistoryEventHandler eventHandler = configuration.getHistoryEventHandler();
@@ -343,6 +343,12 @@ public class ExecutionEntity extends PvmExecutionImpl implements
 
     initializeAssociations(this);
 
+    // execute Input Mappings (if they exist).
+    ensureActivityInitialized();
+    if (activity != null && activity.getIoMapping() != null) {
+      activity.getIoMapping().executeInputParameters(this);
+    }
+
     List<TimerDeclarationImpl> timerDeclarations = (List<TimerDeclarationImpl>) scope.getProperty(BpmnParse.PROPERTYNAME_TIMER_DECLARATION);
     if (timerDeclarations!=null) {
       for (TimerDeclarationImpl timerDeclaration : timerDeclarations) {
@@ -387,6 +393,12 @@ public class ExecutionEntity extends PvmExecutionImpl implements
    public void destroy() {
      super.destroy();
      ensureParentInitialized();
+
+     // execute Output Mappings (if they exist).
+     ensureActivityInitialized();
+     if (activity != null && activity.getIoMapping() != null) {
+       activity.getIoMapping().executeOutputParameters(this);
+     }
      variableStore.removeVariablesWithoutFiringEvents();
    }
 
@@ -1053,9 +1065,6 @@ public class ExecutionEntity extends PvmExecutionImpl implements
     persistentState.put("superExecution", this.superExecutionId);
     persistentState.put("superCaseExecutionId", this.superCaseExecutionId);
     persistentState.put("caseInstanceId", this.caseInstanceId);
-    if (forcedUpdate) {
-      persistentState.put("forcedUpdate", Boolean.TRUE);
-    }
     persistentState.put("suspensionState", this.suspensionState);
     persistentState.put("cachedEntityState", getCachedEntityState());
     return persistentState;
@@ -1079,7 +1088,9 @@ public class ExecutionEntity extends PvmExecutionImpl implements
   }
 
   public void forceUpdate() {
-    this.forcedUpdate = true;
+    Context.getCommandContext()
+      .getDbEntityManager()
+      .forceUpdate(this);
   }
 
   // toString /////////////////////////////////////////////////////////////////
@@ -1141,8 +1152,10 @@ public class ExecutionEntity extends PvmExecutionImpl implements
   }
 
   public void addEventSubscription(EventSubscriptionEntity eventSubscriptionEntity) {
-    getEventSubscriptionsInternal().add(eventSubscriptionEntity);
-
+    List<EventSubscriptionEntity> eventSubscriptionsInternal = getEventSubscriptionsInternal();
+    if(!eventSubscriptionsInternal.contains(eventSubscriptionEntity)) {
+      eventSubscriptionsInternal.add(eventSubscriptionEntity);
+    }
   }
 
   public void removeEventSubscription(EventSubscriptionEntity eventSubscriptionEntity) {
@@ -1170,7 +1183,10 @@ public class ExecutionEntity extends PvmExecutionImpl implements
   }
 
   public void addJob(JobEntity jobEntity) {
-    getJobsInternal().add(jobEntity);
+    List<JobEntity> jobsInternal = getJobsInternal();
+    if(!jobsInternal.contains(jobEntity)) {
+      jobsInternal.add(jobEntity);
+    }
   }
 
   public void removeJob(JobEntity job) {
@@ -1198,7 +1214,10 @@ public class ExecutionEntity extends PvmExecutionImpl implements
   }
 
   public void addIncident(IncidentEntity incident) {
-    getIncidentsInternal().add(incident);
+    List<IncidentEntity> incidentsInternal = getIncidentsInternal();
+    if(!incidentsInternal.contains(incident)) {
+      incidentsInternal.add(incident);
+    }
   }
 
   public void removeIncident(IncidentEntity incident) {
@@ -1236,7 +1255,10 @@ public class ExecutionEntity extends PvmExecutionImpl implements
   }
 
   public void addTask(TaskEntity taskEntity) {
-    getTasksInternal().add(taskEntity);
+    List<TaskEntity> tasksInternal = getTasksInternal();
+    if(!tasksInternal.contains(taskEntity)) {
+      tasksInternal.add(taskEntity);
+    }
   }
 
   public void removeTask(TaskEntity task) {

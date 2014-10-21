@@ -16,10 +16,10 @@ import java.util.List;
 
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.impl.Page;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.persistence.AbstractManager;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.runtime.CaseExecution;
 import org.camunda.bpm.engine.runtime.CaseInstance;
 
@@ -46,21 +46,11 @@ public class CaseExecutionManager extends AbstractManager {
       deleteCaseInstance(caseInstanceId, deleteReason, cascade);
     }
 
-    // TODO: move this later to HistoricCaseInstance
-    int historyLevel = Context
-      .getProcessEngineConfiguration()
-      .getHistoryLevel();
-
-    if (historyLevel > ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE) {
-      CommandContext commandContext = Context.getCommandContext();
-
-      commandContext
-        .getHistoricTaskInstanceManager()
-        .deleteHistoricTaskInstancesByCaseDefinitionId(caseDefinitionId);
-
-      commandContext
-        .getOperationLogManager()
-        .deleteOperationLogEntriesByCaseDefinitionId(caseDefinitionId);
+    if (cascade) {
+      Context
+        .getCommandContext()
+        .getHistoricCaseInstanceManager()
+        .deleteHistoricCaseInstanceByCaseDefinitionId(caseDefinitionId);
     }
 
   }
@@ -83,20 +73,11 @@ public class CaseExecutionManager extends AbstractManager {
 
     execution.deleteCascade();
 
-    // TODO: move this later to HistoricCaseInstance
-    int historyLevel = Context
-      .getProcessEngineConfiguration()
-      .getHistoryLevel();
-
-    if (historyLevel > ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE) {
-
-      commandContext
-        .getHistoricTaskInstanceManager()
-        .deleteHistoricTaskInstancesByCaseInstanceId(caseInstanceId);
-
-      commandContext
-        .getOperationLogManager()
-        .deleteOperationLogEntriesByCaseInstanceId(caseInstanceId);
+    if (cascade) {
+      Context
+        .getCommandContext()
+        .getHistoricCaseInstanceManager()
+        .deleteHistoricCaseInstanceById(caseInstanceId);
     }
   }
 
@@ -129,6 +110,11 @@ public class CaseExecutionManager extends AbstractManager {
   @SuppressWarnings("unchecked")
   public List<CaseExecutionEntity> findChildCaseExecutionsByParentCaseExecutionId(String parentCaseExecutionId) {
     return getDbEntityManager().selectList("selectCaseExecutionsByParentCaseExecutionId", parentCaseExecutionId);
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<CaseExecutionEntity> findChildCaseExecutionsByCaseInstanceId(String caseInstanceId) {
+    return getDbEntityManager().selectList("selectCaseExecutionsByCaseInstanceId", caseInstanceId);
   }
 
 }

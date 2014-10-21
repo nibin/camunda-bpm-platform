@@ -21,6 +21,7 @@ import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbBulkOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbEntityOperation;
 import org.camunda.bpm.engine.impl.db.entitymanager.operation.DbOperation;
+import org.camunda.bpm.engine.impl.history.HistoryLevel;
 
 /**
  * @author Sebastian Menski
@@ -66,9 +67,9 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
   public void dbSchemaCreate() {
     ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
 
-    int configuredHistoryLevel = processEngineConfiguration.getHistoryLevel();
+    HistoryLevel configuredHistoryLevel = processEngineConfiguration.getHistoryLevel();
     if ( (!processEngineConfiguration.isDbHistoryUsed())
-         && (configuredHistoryLevel>ProcessEngineConfigurationImpl.HISTORYLEVEL_NONE)
+         && (!configuredHistoryLevel.equals(HistoryLevel.HISTORY_LEVEL_NONE))
        ) {
       throw new ProcessEngineException("historyLevel config is higher then 'none' and dbHistoryUsed is set to false");
     }
@@ -93,6 +94,10 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
     if (processEngineConfiguration.isCmmnEnabled()) {
       dbSchemaCreateCmmn();
     }
+
+    if (processEngineConfiguration.isCmmnEnabled() && processEngineConfiguration.isDbHistoryUsed()) {
+      dbSchemaCreateCmmnHistory();
+    }
   }
 
   protected abstract void dbSchemaCreateIdentity();
@@ -103,6 +108,8 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
 
   protected abstract void dbSchemaCreateCmmn();
 
+  protected abstract void dbSchemaCreateCmmnHistory();
+
   public void dbSchemaDrop() {
     ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
 
@@ -112,9 +119,14 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
 
     dbSchemaDropEngine();
 
+    if (processEngineConfiguration.isCmmnEnabled() && processEngineConfiguration.isDbHistoryUsed()) {
+      dbSchemaDropCmmnHistory();
+    }
+
     if (processEngineConfiguration.isDbHistoryUsed()) {
       dbSchemaDropHistory();
     }
+
     if (processEngineConfiguration.isDbIdentityUsed()) {
       dbSchemaDropIdentity();
     }
@@ -128,6 +140,8 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
 
   protected abstract void dbSchemaDropCmmn();
 
+  protected abstract void dbSchemaDropCmmnHistory();
+
   public void dbSchemaPrune() {
     ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
     if (isHistoryTablePresent() && !processEngineConfiguration.isDbHistoryUsed()) {
@@ -136,8 +150,11 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
     if (isIdentityTablePresent() && !processEngineConfiguration.isDbIdentityUsed()) {
       dbSchemaDropIdentity();
     }
-    if (isCaseDefinitionTablePresent() && !processEngineConfiguration.isCmmnEnabled()) {
+    if (isCmmnTablePresent() && !processEngineConfiguration.isCmmnEnabled()) {
       dbSchemaDropCmmn();
+    }
+    if (isCmmnHistoryTablePresent() && !processEngineConfiguration.isCmmnEnabled()) {
+      dbSchemaCreateCmmnHistory();
     }
   }
 
@@ -147,7 +164,9 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
 
   public abstract boolean isIdentityTablePresent();
 
-  public abstract boolean isCaseDefinitionTablePresent();
+  public abstract boolean isCmmnTablePresent();
+
+  public abstract boolean isCmmnHistoryTablePresent();
 
   public void dbSchemaUpdate() {
     ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
@@ -164,8 +183,12 @@ public abstract class AbstractPersistenceSession implements PersistenceSession {
       dbSchemaCreateIdentity();
     }
 
-    if (!isCaseDefinitionTablePresent() && processEngineConfiguration.isCmmnEnabled()) {
+    if (!isCmmnTablePresent() && processEngineConfiguration.isCmmnEnabled()) {
       dbSchemaCreateCmmn();
+    }
+
+    if (!isCmmnHistoryTablePresent() && processEngineConfiguration.isCmmnEnabled() && processEngineConfiguration.isDbHistoryUsed()) {
+      dbSchemaCreateCmmnHistory();
     }
 
   }

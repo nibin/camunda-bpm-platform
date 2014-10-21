@@ -22,26 +22,26 @@ import org.camunda.bpm.engine.rest.hal.Hal;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.omg.CORBA.OBJECT_NOT_EXIST;
 
 @Provider
 @Produces({MediaType.APPLICATION_JSON, Hal.MEDIA_TYPE_HAL})
 public class JacksonConfigurator implements ContextResolver<ObjectMapper> {
 
-  ObjectMapper mapper;
+  public static final ObjectMapper OBJECT_MAPPER = configureObjectMapper(new ObjectMapper());
 
-  public JacksonConfigurator() {
-    mapper = new ObjectMapper();
-
+  public static ObjectMapper configureObjectMapper(ObjectMapper mapper) {
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     mapper.getSerializationConfig().setDateFormat(dateFormat);
     mapper.getDeserializationConfig().setDateFormat(dateFormat);
     mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
+    return mapper;
   }
 
   @Override
   public ObjectMapper getContext(Class<?> clazz) {
-    return mapper;
+    return OBJECT_MAPPER;
   }
 
 }

@@ -52,6 +52,7 @@ public class CaseInstanceQueryDto extends AbstractQueryDto<CaseInstanceQuery> {
   protected String caseDefinitionId;
   protected Boolean active;
   protected Boolean completed;
+  protected Boolean terminated;
 
   protected List<VariableQueryParameterDto> variables;
 
@@ -92,6 +93,11 @@ public class CaseInstanceQueryDto extends AbstractQueryDto<CaseInstanceQuery> {
     this.completed = completed;
   }
 
+  @CamundaQueryParam(value = "terminated", converter = BooleanConverter.class)
+  public void setTerminated(Boolean terminated) {
+    this.terminated = terminated;
+  }
+
   @CamundaQueryParam(value = "variables", converter = VariableListConverter.class)
   public void setVariables(List<VariableQueryParameterDto> variables) {
     this.variables = variables;
@@ -126,6 +132,9 @@ public class CaseInstanceQueryDto extends AbstractQueryDto<CaseInstanceQuery> {
     }
     if (completed != null && completed == true) {
       query.completed();
+    }
+    if (terminated != null && terminated == true) {
+      query.terminated();
     }
     if (variables != null) {
 

@@ -30,6 +30,9 @@ public interface VariableInstanceQuery extends Query<VariableInstanceQuery, Vari
   /** Only select variable instances which have the variable name. **/
   VariableInstanceQuery variableName(String variableName);
 
+  /** Only select variable instances which have one of the variables names. **/
+  VariableInstanceQuery variableNameIn(String... variableNames);
+
   /** Only select variable instances which have the name like the assigned variable name.
    * The string can include the wildcard character '%' to express like-strategy:
    * starts with (string%), ends with (%string) or contains (%string%).
@@ -50,6 +53,9 @@ public interface VariableInstanceQuery extends Query<VariableInstanceQuery, Vari
 
   /** Only select variable instances which have one of the task ids. **/
   VariableInstanceQuery taskIdIn(String... taskIds);
+
+  /** Only select variables instances which have on of the variable scope ids. **/
+  VariableInstanceQuery variableScopeIdIn(String... variableScopeIds);
 
   /** Only select variable instances which have one of the activity instance ids. **/
   VariableInstanceQuery activityInstanceIdIn(String... activityInstanceIds);

@@ -314,6 +314,7 @@ public abstract class MockProvider {
   public static final String EXAMPLE_HISTORIC_PROCESS_INSTANCE_START_USER_ID = "aStartUserId";
   public static final String EXAMPLE_HISTORIC_PROCESS_INSTANCE_START_ACTIVITY_ID = "aStartActivityId";
   public static final String EXAMPLE_HISTORIC_PROCESS_INSTANCE_SUPER_PROCESS_INSTANCE_ID = "aSuperProcessInstanceId";
+  public static final String EXAMPLE_HISTORIC_PROCESS_INSTANCE_SUB_PROCESS_INSTANCE_ID = "aSubProcessInstanceId";
   public static final String EXAMPLE_HISTORIC_PROCESS_INSTANCE_CASE_INSTANCE_ID = "aCaseInstanceId";
 
   public static final String EXAMPLE_HISTORIC_PROCESS_INSTANCE_STARTED_AFTER = "2013-04-23T13:42:43";
@@ -436,6 +437,7 @@ public abstract class MockProvider {
   public static final String EXAMPLE_CASE_INSTANCE_CASE_DEFINITION_ID = "aCaseDefinitionId";
   public static final boolean EXAMPLE_CASE_INSTANCE_IS_ACTIVE = true;
   public static final boolean EXAMPLE_CASE_INSTANCE_IS_COMPLETED = true;
+  public static final boolean EXAMPLE_CASE_INSTANCE_IS_TERMINATED = true;
 
   // case execution
   public static final String EXAMPLE_CASE_EXECUTION_ID = "aCaseExecutionId";
@@ -450,34 +452,37 @@ public abstract class MockProvider {
 
   // filter
   public static final String EXAMPLE_FILTER_ID = "aFilterId";
+  public static final String ANOTHER_EXAMPLE_FILTER_ID = "anotherFilterId";
   public static final String EXAMPLE_FILTER_RESOURCE_TYPE = EntityTypes.TASK;
   public static final String EXAMPLE_FILTER_NAME = "aFilterName";
   public static final String EXAMPLE_FILTER_OWNER = "aFilterOwner";
-  public static final Query EXAMPLE_FILTER_QUERY = new TaskQueryImpl().taskName("test");
+  public static final Query EXAMPLE_FILTER_QUERY = new TaskQueryImpl().taskName("test").processVariableValueEquals("foo", "bar").caseInstanceVariableValueEquals("foo", "bar").taskVariableValueEquals("foo", "bar");
   public static final TaskQueryDto EXAMPLE_FILTER_QUERY_DTO = TaskQueryDto.fromQuery(EXAMPLE_FILTER_QUERY);
   public static final Map<String, Object> EXAMPLE_FILTER_PROPERTIES = Collections.singletonMap("color", (Object) "#112233");
 
   // tasks
   public static Task createMockTask() {
-    Task mockTask = new MockTaskBuilder()
-        .id(EXAMPLE_TASK_ID).name(EXAMPLE_TASK_NAME)
-        .assignee(EXAMPLE_TASK_ASSIGNEE_NAME)
-        .createTime(DateTimeUtil.parseDate(EXAMPLE_TASK_CREATE_TIME))
-        .dueDate(DateTimeUtil.parseDate(EXAMPLE_TASK_DUE_DATE))
-        .followUpDate(DateTimeUtil.parseDate(EXAMPLE_FOLLOW_UP_DATE))
-        .delegationState(EXAMPLE_TASK_DELEGATION_STATE).description(EXAMPLE_TASK_DESCRIPTION)
-        .executionId(EXAMPLE_TASK_EXECUTION_ID).owner(EXAMPLE_TASK_OWNER)
-        .parentTaskId(EXAMPLE_TASK_PARENT_TASK_ID)
-        .priority(EXAMPLE_TASK_PRIORITY)
-        .processDefinitionId(EXAMPLE_PROCESS_DEFINITION_ID)
-        .processInstanceId(EXAMPLE_PROCESS_INSTANCE_ID)
-        .taskDefinitionKey(EXAMPLE_TASK_DEFINITION_KEY)
-        .caseDefinitionId(EXAMPLE_CASE_DEFINITION_ID)
-        .caseInstanceId(EXAMPLE_CASE_INSTANCE_ID)
-        .caseExecutionId(EXAMPLE_CASE_EXECUTION_ID)
-        .formKey(EXAMPLE_FORM_KEY)
-        .build();
-    return mockTask;
+    return mockTask().build();
+  }
+
+  public static MockTaskBuilder mockTask() {
+    return new MockTaskBuilder()
+      .id(EXAMPLE_TASK_ID).name(EXAMPLE_TASK_NAME)
+      .assignee(EXAMPLE_TASK_ASSIGNEE_NAME)
+      .createTime(DateTimeUtil.parseDate(EXAMPLE_TASK_CREATE_TIME))
+      .dueDate(DateTimeUtil.parseDate(EXAMPLE_TASK_DUE_DATE))
+      .followUpDate(DateTimeUtil.parseDate(EXAMPLE_FOLLOW_UP_DATE))
+      .delegationState(EXAMPLE_TASK_DELEGATION_STATE).description(EXAMPLE_TASK_DESCRIPTION)
+      .executionId(EXAMPLE_TASK_EXECUTION_ID).owner(EXAMPLE_TASK_OWNER)
+      .parentTaskId(EXAMPLE_TASK_PARENT_TASK_ID)
+      .priority(EXAMPLE_TASK_PRIORITY)
+      .processDefinitionId(EXAMPLE_PROCESS_DEFINITION_ID)
+      .processInstanceId(EXAMPLE_PROCESS_INSTANCE_ID)
+      .taskDefinitionKey(EXAMPLE_TASK_DEFINITION_KEY)
+      .caseDefinitionId(EXAMPLE_CASE_DEFINITION_ID)
+      .caseInstanceId(EXAMPLE_CASE_INSTANCE_ID)
+      .caseExecutionId(EXAMPLE_CASE_EXECUTION_ID)
+      .formKey(EXAMPLE_FORM_KEY);
   }
 
   public static List<Task> createMockTasks() {
@@ -1367,6 +1372,7 @@ public abstract class MockProvider {
     when(mock.getCaseDefinitionId()).thenReturn(EXAMPLE_CASE_INSTANCE_CASE_DEFINITION_ID);
     when(mock.isActive()).thenReturn(EXAMPLE_CASE_INSTANCE_IS_ACTIVE);
     when(mock.isCompleted()).thenReturn(EXAMPLE_CASE_INSTANCE_IS_COMPLETED);
+    when(mock.isTerminated()).thenReturn(EXAMPLE_CASE_INSTANCE_IS_TERMINATED);
 
     return mock;
   }
@@ -1403,19 +1409,24 @@ public abstract class MockProvider {
 
   public static List<Filter> createMockFilters() {
     List<Filter> mocks = new ArrayList<Filter>();
-    mocks.add(createMockFilter());
+    mocks.add(createMockFilter(EXAMPLE_FILTER_ID));
+    mocks.add(createMockFilter(ANOTHER_EXAMPLE_FILTER_ID));
     return mocks;
   }
 
   public static Filter createMockFilter() {
-    Filter mock = mock(Filter.class);
+    return createMockFilter(EXAMPLE_FILTER_ID);
+  }
 
-    when(mock.getId()).thenReturn(EXAMPLE_FILTER_ID);
-    when(mock.getResourceType()).thenReturn(EXAMPLE_FILTER_RESOURCE_TYPE);
-    when(mock.getName()).thenReturn(EXAMPLE_FILTER_NAME);
-    when(mock.getOwner()).thenReturn(EXAMPLE_FILTER_OWNER);
-    when(mock.getQuery()).thenReturn(EXAMPLE_FILTER_QUERY);
-    when(mock.getProperties()).thenReturn(EXAMPLE_FILTER_PROPERTIES);
+  public static Filter createMockFilter(String id) {
+    Filter mock = mockFilter()
+      .id(id)
+      .resourceType(EXAMPLE_FILTER_RESOURCE_TYPE)
+      .name(EXAMPLE_FILTER_NAME)
+      .owner(EXAMPLE_FILTER_OWNER)
+      .query(EXAMPLE_FILTER_QUERY)
+      .properties(EXAMPLE_FILTER_PROPERTIES)
+      .build();
 
     doThrow(new NotValidException("Name must not be null"))
       .when(mock).setName(null);
@@ -1425,6 +1436,16 @@ public abstract class MockProvider {
       .when(mock).setQuery(null);
 
     return mock;
+  }
+
+  public static MockFilterBuilder mockFilter() {
+    return new MockFilterBuilder()
+      .id(EXAMPLE_FILTER_ID)
+      .resourceType(EXAMPLE_FILTER_RESOURCE_TYPE)
+      .name(EXAMPLE_FILTER_NAME)
+      .owner(EXAMPLE_FILTER_OWNER)
+      .query(EXAMPLE_FILTER_QUERY)
+      .properties(EXAMPLE_FILTER_PROPERTIES);
   }
 
   public static FilterQuery createMockFilterQuery() {

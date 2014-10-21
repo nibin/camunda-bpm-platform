@@ -21,12 +21,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.camunda.bpm.engine.delegate.VariableListener;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.core.variable.CoreVariableInstance;
+import org.camunda.bpm.engine.impl.core.variable.event.VariableEvent;
 import org.camunda.bpm.engine.impl.core.variable.scope.AbstractVariableScope;
 import org.camunda.bpm.engine.impl.core.variable.scope.AbstractVariableStore;
+import org.camunda.bpm.engine.impl.history.HistoryLevel;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
+import org.camunda.bpm.engine.impl.history.event.HistoryEventTypes;
 import org.camunda.bpm.engine.impl.history.handler.HistoryEventHandler;
 import org.camunda.bpm.engine.impl.history.producer.HistoryEventProducer;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
@@ -101,6 +105,7 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
       if(isAutoFireHistoryEvents()) {
         fireHistoricVariableInstanceDelete(variable, sourceActivityExecution);
       }
+      fireVariableEvent(variable, VariableListener.DELETE, sourceActivityExecution);
     }
     return variable;
   }
@@ -113,6 +118,7 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
     if(isAutoFireHistoryEvents()) {
       fireHistoricVariableInstanceUpdate(variableInstanceEntity, sourceActivityExecution);
     }
+    fireVariableEvent(variableInstanceEntity, VariableListener.UPDATE, sourceActivityExecution);
   }
 
   public CoreVariableInstance createVariableInstance(String variableName, TypedValue value, AbstractVariableScope sourceActivityExecution) {
@@ -126,6 +132,7 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
     if(isAutoFireHistoryEvents()) {
       fireHistoricVariableInstanceCreate(variableInstance, sourceActivityExecution);
     }
+    fireVariableEvent(variableInstance, VariableListener.CREATE, sourceActivityExecution);
 
     return variableInstance;
   }
@@ -145,8 +152,8 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
 
   public void fireHistoricVariableInstanceDelete(VariableInstanceEntity variableInstance, AbstractVariableScope sourceActivityExecution) {
 
-    int historyLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
-    if (historyLevel >=ProcessEngineConfigurationImpl.HISTORYLEVEL_AUDIT) {
+    HistoryLevel historyLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
+    if (historyLevel.isHistoryEventProduced(HistoryEventTypes.VARIABLE_INSTANCE_DELTE, variableInstance)) {
 
       final ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
       final HistoryEventHandler eventHandler = processEngineConfiguration.getHistoryEventHandler();
@@ -160,8 +167,9 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
   }
 
   public void fireHistoricVariableInstanceCreate(VariableInstanceEntity variableInstance, AbstractVariableScope sourceActivityExecution) {
-    int historyLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
-    if (historyLevel >=ProcessEngineConfigurationImpl.HISTORYLEVEL_AUDIT) {
+
+    HistoryLevel historyLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
+    if (historyLevel.isHistoryEventProduced(HistoryEventTypes.VARIABLE_INSTANCE_CREATE, variableInstance)) {
 
       final ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
       final HistoryEventHandler eventHandler = processEngineConfiguration.getHistoryEventHandler();
@@ -175,9 +183,8 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
   }
 
   public void fireHistoricVariableInstanceUpdate(VariableInstanceEntity variableInstance, AbstractVariableScope sourceActivityExecution) {
-
-    int historyLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
-    if (historyLevel >=ProcessEngineConfigurationImpl.HISTORYLEVEL_AUDIT) {
+    HistoryLevel historyLevel = Context.getProcessEngineConfiguration().getHistoryLevel();
+    if (historyLevel.isHistoryEventProduced(HistoryEventTypes.VARIABLE_INSTANCE_UPDATE, variableInstance)) {
 
       final ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
       final HistoryEventHandler eventHandler = processEngineConfiguration.getHistoryEventHandler();
@@ -187,6 +194,10 @@ public abstract class AbstractPersistentVariableStore extends AbstractVariableSt
       eventHandler.handleEvent(evt);
 
     }
-
   }
+
+  protected void fireVariableEvent(VariableInstanceEntity variableInstance, String eventName, AbstractVariableScope sourceActivityExecution) {
+    sourceActivityExecution.dispatchEvent(new VariableEvent(variableInstance, eventName, sourceActivityExecution));
+  }
+
 }

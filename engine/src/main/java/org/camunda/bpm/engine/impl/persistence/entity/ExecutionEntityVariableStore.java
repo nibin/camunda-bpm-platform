@@ -12,10 +12,10 @@
  */
 package org.camunda.bpm.engine.impl.persistence.entity;
 
-import org.camunda.bpm.engine.impl.variable.AbstractPersistentVariableStore;
-
 import java.util.List;
 import java.util.Map;
+
+import org.camunda.bpm.engine.impl.variable.AbstractPersistentVariableStore;
 
 /**
  * @author Daniel Meyer
