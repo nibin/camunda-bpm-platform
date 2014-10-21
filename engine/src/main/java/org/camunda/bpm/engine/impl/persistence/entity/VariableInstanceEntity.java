@@ -67,7 +67,6 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
 
   protected String errorMessage;
 
-  protected String dataFormatId;
   protected String configuration;
 
   // Default constructor for SQL mapping
@@ -136,9 +135,6 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     }
     if (forcedUpdate) {
       persistentState.put("forcedUpdate", Boolean.TRUE);
-    }
-    if (dataFormatId != null) {
-      persistentState.put("dataFormatId", dataFormatId);
     }
     return persistentState;
   }
@@ -455,14 +451,6 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     return errorMessage;
   }
 
-  public String getDataFormatId() {
-    return dataFormatId;
-  }
-
-  public void setDataFormatId(String dataFormatId) {
-    this.dataFormatId = dataFormatId;
-  }
-
   public String getVariableScope() {
     if (taskId != null) {
       return taskId;
@@ -498,7 +486,6 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
       + ", byteArrayValue=" + byteArrayValue
       + ", byteArrayValueId=" + byteArrayValueId
       + ", forcedUpdate=" + forcedUpdate
-      + ", dataFormatId=" + dataFormatId
       + ", configuration=" + configuration
       + "]";
   }

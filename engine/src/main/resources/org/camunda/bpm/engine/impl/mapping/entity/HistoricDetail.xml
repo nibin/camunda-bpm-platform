@@ -37,7 +37,7 @@
   
   <insert id="insertHistoricVariableUpdateEvent" parameterType="org.camunda.bpm.engine.impl.history.event.HistoricVariableUpdateEventEntity">
   
-    insert into ${prefix}ACT_HI_DETAIL (ID_, TYPE_, PROC_INST_ID_, EXECUTION_ID_, ACT_INST_ID_, TASK_ID_, NAME_, REV_, VAR_INST_ID_, VAR_TYPE_, TIME_, BYTEARRAY_ID_, DOUBLE_, LONG_ , TEXT_, TEXT2_, DATA_FORMAT_ID_)
+    insert into ${prefix}ACT_HI_DETAIL (ID_, TYPE_, PROC_INST_ID_, EXECUTION_ID_, ACT_INST_ID_, TASK_ID_, NAME_, REV_, VAR_INST_ID_, VAR_TYPE_, TIME_, BYTEARRAY_ID_, DOUBLE_, LONG_ , TEXT_, TEXT2_)
     values (
       #{id, jdbcType=VARCHAR},
       'VariableUpdate',
@@ -54,8 +54,7 @@
       #{doubleValue, jdbcType=DOUBLE},
       #{longValue, jdbcType=BIGINT},
       #{textValue, jdbcType=VARCHAR},
-      #{textValue2, jdbcType=VARCHAR},
-      #{dataFormatId, jdbcType=VARCHAR}
+      #{textValue2, jdbcType=VARCHAR}
     )
   </insert>
   
@@ -110,7 +109,6 @@
     <result property="textValue" column="TEXT_" jdbcType="VARCHAR" />
     <result property="textValue2" column="TEXT2_" jdbcType="VARCHAR" />
     <result property="longValue" column="LONG_" jdbcType="BIGINT" />
-    <result property="dataFormatId" column="DATA_FORMAT_ID_" jdbcType="VARCHAR"/>
   </resultMap>
   
   
@@ -138,7 +136,6 @@
     <result property="textValue" column="TEXT_" jdbcType="VARCHAR" />
     <result property="textValue2" column="TEXT2_" jdbcType="VARCHAR" />
     <result property="longValue" column="LONG_" jdbcType="BIGINT" />
-    <result property="dataFormatId" column="DATA_FORMAT_ID_" jdbcType="VARCHAR"/>
   </resultMap>
   
   <resultMap id="historicFormPropertyResultMap" extends="historicDetailResultMap" type="org.camunda.bpm.engine.impl.persistence.entity.HistoricFormPropertyEntity">

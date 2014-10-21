@@ -40,7 +40,4 @@ public interface ValueFields {
   ByteArrayEntity getByteArrayValue();
   void setByteArrayValue(byte[] bytes);
 
-  String getDataFormatId();
-  void setDataFormatId(String dataFormatId);
-
 }

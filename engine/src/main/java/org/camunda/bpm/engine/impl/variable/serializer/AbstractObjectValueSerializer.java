@@ -120,7 +120,6 @@ public abstract class AbstractObjectValueSerializer extends AbstractTypedValueSe
 
   protected void writeToValueFields(ValueFields valueFields, String objectTypeName, byte[] serializedValue) {
     ByteArrayValueSerializer.setBytes(valueFields, serializedValue);
-    valueFields.setDataFormatId(serializationDataFormat);
     valueFields.setTextValue2(objectTypeName);
   }
 
