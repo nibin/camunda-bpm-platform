@@ -135,8 +135,13 @@ public class VariableMapImpl implements VariableMap, Serializable {
   }
 
   public void putAll(Map<? extends String, ? extends Object> m) {
-    for (java.util.Map.Entry<? extends String, ? extends Object> entry : m.entrySet()) {
-      put(entry.getKey(), entry.getValue());
+    if(m instanceof VariableMapImpl) {
+      variables.putAll(((VariableMapImpl)m).variables);
+    }
+    else {
+      for (java.util.Map.Entry<? extends String, ? extends Object> entry : m.entrySet()) {
+        put(entry.getKey(), entry.getValue());
+      }
     }
   }
 
@@ -272,11 +277,7 @@ public class VariableMapImpl implements VariableMap, Serializable {
   }
 
   public Map<String, Object> asValueMap() {
-    Map<String, Object> map = new HashMap<String, Object>();
-    for (java.util.Map.Entry<String, Object> entry : entrySet()) {
-      map.put(entry.getKey(), entry.getValue());
-    }
-    return map;
+    return new HashMap<String, Object>(this);
   }
 
 }
