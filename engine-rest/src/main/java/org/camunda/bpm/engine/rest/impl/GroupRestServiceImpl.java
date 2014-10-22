@@ -64,6 +64,7 @@ public class GroupRestServiceImpl extends AbstractAuthorizedRestResource impleme
 
   public List<GroupDto> queryGroups(GroupQueryDto queryDto, Integer firstResult, Integer maxResults) {
 
+    queryDto.setObjectMapper(getObjectMapper());
     GroupQuery query = queryDto.toQuery(getProcessEngine());
 
     List<Group> resultList;

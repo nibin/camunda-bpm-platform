@@ -251,7 +251,7 @@ public class TaskResourceImpl implements TaskResource {
     return new LocalTaskVariablesResource(engine, taskId, objectMapper);
   }
 
-  public Map<String, VariableValueDto> getFormVariables(String variableNames) {
+  public Map<String, VariableValueDto> getFormVariables(String variableNames, boolean deserializeValues) {
 
     final FormService formService = engine.getFormService();
     List<String> formVariables = null;
@@ -261,7 +261,7 @@ public class TaskResourceImpl implements TaskResource {
       formVariables = stringListConverter.convertQueryParameterToType(variableNames);
     }
 
-    VariableMap startFormVariables = formService.getTaskFormVariables(taskId, formVariables, false);
+    VariableMap startFormVariables = formService.getTaskFormVariables(taskId, formVariables, deserializeValues);
 
     return VariableValueDto.fromVariableMap(startFormVariables);
   }

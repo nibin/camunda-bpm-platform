@@ -37,6 +37,7 @@ public class CaseExecutionRestServiceImpl extends AbstractRestProcessEngineAware
 
   public List<CaseExecutionDto> queryCaseExecutions(CaseExecutionQueryDto queryDto, Integer firstResult, Integer maxResults) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     CaseExecutionQuery query = queryDto.toQuery(engine);
 
     List<CaseExecution> matchingExecutions;
@@ -71,6 +72,7 @@ public class CaseExecutionRestServiceImpl extends AbstractRestProcessEngineAware
 
   public CountResultDto queryCaseExecutionsCount(CaseExecutionQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     CaseExecutionQuery query = queryDto.toQuery(engine);
 
     long count = query.count();

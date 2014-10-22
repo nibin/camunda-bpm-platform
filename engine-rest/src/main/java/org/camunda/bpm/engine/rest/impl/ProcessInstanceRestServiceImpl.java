@@ -54,6 +54,7 @@ public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAwa
   public List<ProcessInstanceDto> queryProcessInstances(
       ProcessInstanceQueryDto queryDto, Integer firstResult, Integer maxResults) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     ProcessInstanceQuery query = queryDto.toQuery(engine);
 
     List<ProcessInstance> matchingInstances;
@@ -90,6 +91,7 @@ public class ProcessInstanceRestServiceImpl extends AbstractRestProcessEngineAwa
   @Override
   public CountResultDto queryProcessInstancesCount(ProcessInstanceQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     ProcessInstanceQuery query = queryDto.toQuery(engine);
 
     long count = query.count();

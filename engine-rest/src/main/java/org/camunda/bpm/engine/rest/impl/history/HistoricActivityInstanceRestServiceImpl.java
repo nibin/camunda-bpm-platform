@@ -43,6 +43,7 @@ public class HistoricActivityInstanceRestServiceImpl implements HistoricActivity
 
   @Override
   public List<HistoricActivityInstanceDto> queryHistoricActivityInstances(HistoricActivityInstanceQueryDto queryDto, Integer firstResult, Integer maxResults) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricActivityInstanceQuery query = queryDto.toQuery(processEngine);
 
     List<HistoricActivityInstance> matchingHistoricActivityInstances;
@@ -78,6 +79,7 @@ public class HistoricActivityInstanceRestServiceImpl implements HistoricActivity
 
   @Override
   public CountResultDto queryHistoricActivityInstancesCount(HistoricActivityInstanceQueryDto queryDto) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricActivityInstanceQuery query = queryDto.toQuery(processEngine);
 
     long count = query.count();

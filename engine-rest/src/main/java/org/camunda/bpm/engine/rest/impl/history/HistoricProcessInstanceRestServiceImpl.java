@@ -51,6 +51,7 @@ public class HistoricProcessInstanceRestServiceImpl implements HistoricProcessIn
 
   @Override
   public List<HistoricProcessInstanceDto> queryHistoricProcessInstances(HistoricProcessInstanceQueryDto queryDto, Integer firstResult, Integer maxResults) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricProcessInstanceQuery query = queryDto.toQuery(processEngine);
 
     List<HistoricProcessInstance> matchingHistoricProcessInstances;
@@ -86,6 +87,7 @@ public class HistoricProcessInstanceRestServiceImpl implements HistoricProcessIn
 
   @Override
   public CountResultDto queryHistoricProcessInstancesCount(HistoricProcessInstanceQueryDto queryDto) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricProcessInstanceQuery query = queryDto.toQuery(processEngine);
 
     long count = query.count();

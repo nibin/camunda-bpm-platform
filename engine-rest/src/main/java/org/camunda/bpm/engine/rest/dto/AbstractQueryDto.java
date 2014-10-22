@@ -30,6 +30,7 @@ import org.camunda.bpm.engine.rest.dto.converter.JacksonAwareStringToTypeConvert
 import org.camunda.bpm.engine.rest.dto.converter.StringToTypeConverter;
 import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
 import org.camunda.bpm.engine.rest.exception.RestException;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
@@ -71,6 +72,14 @@ public abstract class AbstractQueryDto<T extends Query<?, ?>> {
       String value = param.getValue().iterator().next();
       this.setValueBasedOnAnnotation(key, value);
     }
+  }
+
+  // note: with Jackson version >= 1.9, it would be better to use @JacksonInject and
+  // configure the object mapper in the JacksonConfigurator class to be an injectable value.
+  // then, explicitly calling this method with every query is not necessary any longer
+  @JsonIgnore
+  public void setObjectMapper(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
   }
 
   @CamundaQueryParam("sortBy")
@@ -119,10 +128,11 @@ public abstract class AbstractQueryDto<T extends Query<?, ?>> {
         throw new RestException(Status.INTERNAL_SERVER_ERROR, e, "Server error.");
       } catch (IllegalAccessException e) {
         throw new RestException(Status.INTERNAL_SERVER_ERROR, e, "Server error.");
-      } catch (IllegalArgumentException e) {
-        throw new InvalidRequestException(Status.BAD_REQUEST, e, "Cannot set query parameter '" + key + "' to value '" + value + "'");
       } catch (InvocationTargetException e) {
         throw new InvalidRequestException(Status.BAD_REQUEST, e, "Cannot set query parameter '" + key + "' to value '" + value + "'");
+      } catch (RestException e) {
+        throw new InvalidRequestException(e.getStatus(), e,
+            "Cannot set query parameter '" + key + "' to value '" + value + "': " + e.getMessage());
       }
     }
   }

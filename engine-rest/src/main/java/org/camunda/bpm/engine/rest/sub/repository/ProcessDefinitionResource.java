@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -86,5 +87,6 @@ public interface ProcessDefinitionResource {
   @GET
   @Path("/form-variables")
   @Produces(MediaType.APPLICATION_JSON)
-  Map<String, VariableValueDto> getFormVariables(@QueryParam("variableNames") String variableNames);
+  Map<String, VariableValueDto> getFormVariables(@QueryParam("variableNames") String variableNames,
+      @QueryParam("deserializeValue") @DefaultValue("true") boolean deserializeValues);
 }

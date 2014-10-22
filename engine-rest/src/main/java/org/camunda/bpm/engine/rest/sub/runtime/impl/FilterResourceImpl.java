@@ -73,7 +73,6 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
   public static final String PROPERTIES_VARIABLES_KEY = "variables";
   public static final String PROPERTIES_VARIABLES_NAME_KEY = "name";
 
-  protected ObjectMapper objectMapper;
   protected String relativeRootResourcePath;
   protected FilterService filterService;
   protected Filter dbFilter;
@@ -81,13 +80,12 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
   public FilterResourceImpl(String processEngineName, ObjectMapper objectMapper, String filterId, String relativeRootResourcePath) {
     super(processEngineName, FILTER, filterId, objectMapper);
     this.relativeRootResourcePath = relativeRootResourcePath;
-    this.objectMapper = objectMapper;
     filterService = processEngine.getFilterService();
   }
 
   public FilterDto getFilter(Boolean itemCount) {
     Filter filter = getDbFilter();
-    FilterDto dto = FilterDto.fromFilter(filter);
+    FilterDto dto = FilterDto.fromFilter(filter, getObjectMapper());
     if (itemCount != null && itemCount) {
       dto.setItemCount(filterService.count(filter.getId()));
     }
@@ -118,7 +116,7 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
     Filter filter = getDbFilter();
 
     try {
-      filterDto.updateFilter(filter, processEngine);
+      filterDto.updateFilter(filter, processEngine, getObjectMapper());
     }
     catch (NotValidException e) {
       throw new InvalidRequestException(Status.BAD_REQUEST, e, "Unable to update filter with invalid content");
@@ -290,6 +288,7 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
     else {
       String resourceType = getDbFilter().getResourceType();
       AbstractQueryDto<?> queryDto = getQueryDtoForQuery(queryString, resourceType);
+      queryDto.setObjectMapper(getObjectMapper());
       if (queryDto != null) {
         return queryDto.toQuery(processEngine);
       } else {
@@ -366,7 +365,7 @@ public class FilterResourceImpl extends AbstractAuthorizedRestResource implement
   protected AbstractQueryDto<?> getQueryDtoForQuery(String queryString, String resourceType) {
     try {
       if (EntityTypes.TASK.equals(resourceType)) {
-        return objectMapper.readValue(queryString, TaskQueryDto.class);
+        return getObjectMapper().readValue(queryString, TaskQueryDto.class);
       } else {
         throw new InvalidRequestException(Status.BAD_REQUEST, "Queries for resource type '" + resourceType + "' are currently not supported by filters.");
       }

@@ -66,6 +66,7 @@ public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implemen
   public List<TaskDto> queryTasks(TaskQueryDto queryDto, Integer firstResult,
       Integer maxResults) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     TaskQuery query = queryDto.toQuery(engine);
 
     List<Task> matchingTasks = executeTaskQuery(firstResult, maxResults, query);
@@ -112,6 +113,7 @@ public class TaskRestServiceImpl extends AbstractRestProcessEngineAware implemen
   @Override
   public CountResultDto queryTasksCount(TaskQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     TaskQuery query = queryDto.toQuery(engine);
 
     long count = query.count();

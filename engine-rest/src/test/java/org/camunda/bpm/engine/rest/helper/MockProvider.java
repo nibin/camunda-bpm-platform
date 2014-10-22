@@ -1402,8 +1402,7 @@ public abstract class MockProvider {
 
   public static VariableMap createMockFormVariables() {
     VariableMap mock = Variables.createVariables();
-    VariableInstance variableInstanceMock = createMockVariableInstance();
-    mock.put(variableInstanceMock.getName(), variableInstanceMock);
+    mock.putValueTyped(EXAMPLE_VARIABLE_INSTANCE_NAME, EXAMPLE_PRIMITIVE_VARIABLE_VALUE);
     return mock;
   }
 

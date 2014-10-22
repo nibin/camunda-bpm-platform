@@ -65,6 +65,7 @@ public class UserRestServiceImpl extends AbstractAuthorizedRestResource implemen
 
   public List<UserProfileDto> queryUsers(UserQueryDto queryDto, Integer firstResult, Integer maxResults) {
 
+    queryDto.setObjectMapper(getObjectMapper());
     UserQuery query = queryDto.toQuery(getProcessEngine());
 
     List<User> resultList;

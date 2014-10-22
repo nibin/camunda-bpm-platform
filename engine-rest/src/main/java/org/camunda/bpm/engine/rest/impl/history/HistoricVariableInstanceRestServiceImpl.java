@@ -50,6 +50,7 @@ public class HistoricVariableInstanceRestServiceImpl implements HistoricVariable
 
   @Override
   public List<HistoricVariableInstanceDto> queryHistoricVariableInstances(HistoricVariableInstanceQueryDto queryDto, Integer firstResult, Integer maxResults) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricVariableInstanceQuery query = queryDto.toQuery(processEngine);
     query.disableBinaryFetching();
     // variables of type Serializable have to be deserialized to not break existing API
@@ -88,6 +89,7 @@ public class HistoricVariableInstanceRestServiceImpl implements HistoricVariable
 
   @Override
   public CountResultDto queryHistoricVariableInstancesCount(HistoricVariableInstanceQueryDto queryDto) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricVariableInstanceQuery query = queryDto.toQuery(processEngine);
 
     long count = query.count();

@@ -12,10 +12,11 @@
  */
 package org.camunda.bpm.engine.rest.dto.converter;
 
+
 public class BooleanConverter extends JacksonAwareStringToTypeConverter<Boolean> {
 
   @Override
   public Boolean convertQueryParameterToType(String value) {
-    return Boolean.valueOf(value);
+    return mapToType(value, Boolean.class);
   }
 }

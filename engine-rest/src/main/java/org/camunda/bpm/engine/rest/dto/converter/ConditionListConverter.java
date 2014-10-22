@@ -37,7 +37,7 @@ public class ConditionListConverter extends JacksonAwareStringToTypeConverter<Li
         throw new InvalidRequestException(Status.BAD_REQUEST, "condition query parameter has to have format OPERATOR_VALUE.");
       }
 
-      ConditionQueryParameterDto queryCondition = new ConditionQueryParameterDto(objectMapper);
+      ConditionQueryParameterDto queryCondition = new ConditionQueryParameterDto();
       queryCondition.setOperator(valueTuple[0]);
       queryCondition.setValue(valueTuple[1]);
 

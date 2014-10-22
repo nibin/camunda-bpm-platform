@@ -65,7 +65,6 @@ import org.camunda.bpm.container.RuntimeContainerDelegate;
 import org.camunda.bpm.engine.FormService;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ManagementService;
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.TaskService;
@@ -87,6 +86,7 @@ import org.camunda.bpm.engine.rest.helper.EqualsList;
 import org.camunda.bpm.engine.rest.helper.EqualsMap;
 import org.camunda.bpm.engine.rest.helper.ErrorMessageHelper;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.VariableTypeHelper;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsNullValue;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsPrimitiveValue;
@@ -206,7 +206,7 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
     when(taskServiceMock.createAttachment(anyString(), anyString(), anyString(), anyString(), anyString(), any(InputStream.class))).thenReturn(mockTaskAttachment);
     when(taskServiceMock.getTaskAttachmentContent(EXAMPLE_TASK_ID, EXAMPLE_TASK_ATTACHMENT_ID)).thenReturn(new ByteArrayInputStream(createMockByteData()));
 
-    when(taskServiceMock.getVariablesLocal(EXAMPLE_TASK_ID)).thenReturn(EXAMPLE_VARIABLES);
+    when(taskServiceMock.getVariablesLocal(EXAMPLE_TASK_ID, true)).thenReturn(EXAMPLE_VARIABLES);
 
     formServiceMock = mock(FormService.class);
     when(processEngine.getFormService()).thenReturn(formServiceMock);
@@ -635,7 +635,7 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
       .contentType(POST_JSON_CONTENT_TYPE).body(variables)
       .then().expect()
         .statusCode(Status.BAD_REQUEST.getStatusCode()).contentType(ContentType.JSON)
-        .body("type", equalTo(RestException.class.getSimpleName()))
+        .body("type", equalTo(InvalidRequestException.class.getSimpleName()))
         .body("message", containsString("Cannot submit task form anId: Unsupported value type 'X'"))
       .when().post(SUBMIT_FORM_URL);
   }
@@ -661,9 +661,10 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect()
         .statusCode(Status.OK.getStatusCode()).contentType(ContentType.JSON)
-        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".id", equalTo(MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID))
-        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".name", equalTo(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME))
-        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".type", equalTo(MockProvider.EXAMPLE_PRIMITIVE_VARIABLE_VALUE.getType().getName()))
+        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".type",
+            equalTo(VariableTypeHelper.toExpectedValueTypeName(MockProvider.EXAMPLE_PRIMITIVE_VARIABLE_VALUE.getType())))
+        .body(MockProvider.EXAMPLE_VARIABLE_INSTANCE_NAME+".value",
+            equalTo(MockProvider.EXAMPLE_PRIMITIVE_VARIABLE_VALUE.getValue()))
       .when().get(FORM_VARIABLES_URL)
       .body();
 
@@ -2125,7 +2126,7 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
       .then().expect().statusCode(Status.OK.getStatusCode())
       .body(EXAMPLE_VARIABLE_KEY, notNullValue())
       .body(EXAMPLE_VARIABLE_KEY + ".value", equalTo(EXAMPLE_VARIABLE_VALUE.getValue()))
-      .body(EXAMPLE_VARIABLE_KEY + ".type", equalTo(ValueType.STRING.getName()))
+      .body(EXAMPLE_VARIABLE_KEY + ".type", equalTo(VariableTypeHelper.toExpectedValueTypeName(EXAMPLE_VARIABLE_VALUE.getType())))
       .when().get(SINGLE_TASK_VARIABLES_URL);
 
     Assert.assertEquals("Should return exactly one variable", 1, response.jsonPath().getMap("").size());
@@ -2240,7 +2241,7 @@ public abstract class AbstractTaskRestServiceInteractionTest extends
     given().pathParam("id", NON_EXISTING_ID).pathParam("varId", variableKey)
       .header("accept", MediaType.APPLICATION_JSON)
       .then().expect().statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode())
-      .body("type", is(InvalidRequestException.class.getSimpleName()))
+      .body("type", is(RestException.class.getSimpleName()))
       .body("message", is("Cannot get task variable " + variableKey + ": task " + NON_EXISTING_ID + " doesn't exist"))
       .when().get(SINGLE_TASK_SINGLE_VARIABLE_URL);
   }

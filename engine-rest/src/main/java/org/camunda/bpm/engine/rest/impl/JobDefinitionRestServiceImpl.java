@@ -60,6 +60,7 @@ public class JobDefinitionRestServiceImpl extends AbstractRestProcessEngineAware
   }
 
   public List<JobDefinitionDto> queryJobDefinitions(JobDefinitionQueryDto queryDto, Integer firstResult, Integer maxResults) {
+    queryDto.setObjectMapper(getObjectMapper());
     JobDefinitionQuery query = queryDto.toQuery(getProcessEngine());
 
     List<JobDefinition> matchingJobDefinitions;
@@ -79,6 +80,7 @@ public class JobDefinitionRestServiceImpl extends AbstractRestProcessEngineAware
   }
 
   public CountResultDto queryJobDefinitionsCount(JobDefinitionQueryDto queryDto) {
+    queryDto.setObjectMapper(getObjectMapper());
     JobDefinitionQuery query = queryDto.toQuery(getProcessEngine());
 
     long count = query.count();

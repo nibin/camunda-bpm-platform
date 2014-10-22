@@ -54,6 +54,7 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
   public List<ExecutionDto> queryExecutions(
       ExecutionQueryDto queryDto, Integer firstResult, Integer maxResults) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     ExecutionQuery query = queryDto.toQuery(engine);
 
     List<Execution> matchingExecutions;
@@ -90,6 +91,7 @@ public class ExecutionRestServiceImpl extends AbstractRestProcessEngineAware imp
   @Override
   public CountResultDto queryExecutionsCount(ExecutionQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     ExecutionQuery query = queryDto.toQuery(engine);
 
     long count = query.count();

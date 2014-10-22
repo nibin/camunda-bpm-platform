@@ -16,6 +16,6 @@ public class IntegerConverter extends JacksonAwareStringToTypeConverter<Integer>
 
   @Override
   public Integer convertQueryParameterToType(String value) {
-    return new Integer(value);
+    return mapToType(value, Integer.class);
   }
 }

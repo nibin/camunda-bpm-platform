@@ -13,7 +13,6 @@
 
 package org.camunda.bpm.engine.rest;
 
-import static org.camunda.bpm.engine.variable.Variables.*;
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.path.json.JsonPath.from;
 import static org.camunda.bpm.engine.authorization.Authorization.ANY;
@@ -25,6 +24,7 @@ import static org.camunda.bpm.engine.rest.helper.MockProvider.EXAMPLE_FILTER_ID;
 import static org.camunda.bpm.engine.rest.helper.MockProvider.mockFilter;
 import static org.camunda.bpm.engine.rest.helper.MockProvider.mockVariableInstance;
 import static org.camunda.bpm.engine.rest.helper.TaskQueryMatcher.hasName;
+import static org.camunda.bpm.engine.variable.Variables.stringValue;
 import static org.fest.assertions.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -67,7 +67,6 @@ import org.camunda.bpm.engine.impl.TaskQueryImpl;
 import org.camunda.bpm.engine.impl.identity.Authentication;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.query.Query;
-import org.camunda.bpm.engine.rest.dto.runtime.FilterDto;
 import org.camunda.bpm.engine.rest.dto.task.TaskQueryDto;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
 import org.camunda.bpm.engine.rest.helper.MockTaskBuilder;
@@ -75,7 +74,6 @@ import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
-import org.camunda.bpm.engine.variable.type.ValueType;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 import org.junit.Before;
 import org.junit.Test;
@@ -215,11 +213,11 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
 
   @Test
   public void testCreateFilter() {
-    FilterDto dto = FilterDto.fromFilter(MockProvider.createMockFilter());
+    Map<String, Object> json = toFilterRequest(MockProvider.createMockFilter());
 
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
-      .body(dto)
+      .body(json)
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body("id", notNullValue())
@@ -243,12 +241,12 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
 
   @Test
   public void testUpdateFilter() {
-    FilterDto dto = FilterDto.fromFilter(MockProvider.createMockFilter());
+    Map<String, Object> json = toFilterRequest(MockProvider.createMockFilter());
 
     given()
       .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
-      .body(dto)
+      .body(json)
     .then().expect()
       .statusCode(Status.NO_CONTENT.getStatusCode())
     .when()
@@ -260,17 +258,32 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
 
   @Test
   public void testInvalidResourceType() {
-    FilterDto dto = FilterDto.fromFilter(MockProvider.createMockFilter());
-    dto.setResourceType("invalid");
+    Map<String, Object> json = toFilterRequest(MockProvider.createMockFilter());
+    json.put("resourceType", "invalid");
 
     given()
       .pathParam("id", EXAMPLE_FILTER_ID)
       .contentType(POST_JSON_CONTENT_TYPE)
-      .body(dto)
+      .body(json)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
     .when()
       .put(SINGLE_FILTER_URL);
+  }
+
+  protected Map<String, Object> toFilterRequest(Filter filter) {
+    Map<String, Object> json = new HashMap<String, Object>();
+
+    json.put("id", filter.getId());
+    json.put("name", filter.getName());
+    json.put("owner", filter.getOwner());
+    json.put("properties", filter.getProperties());
+    json.put("resourceType", filter.getResourceType());
+
+    // should not use the dto classes in client-side tests
+    json.put("query", TaskQueryDto.fromQuery(filter.getQuery()));
+
+    return json;
   }
 
   @Test
@@ -1266,7 +1279,7 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
   protected void verifyVariableValue(Map<String, Object> variable, String name, String value, String scopeResourcePath, String scopeId, String variablesName) {
     assertThat(variable.get("name")).isEqualTo(name);
     assertThat(variable.get("value")).isEqualTo(value);
-    assertThat(variable.get("type")).isEqualTo(ValueType.STRING.getName());
+    assertThat(variable.get("type")).isEqualTo("String");
     assertThat(variable.get("valueInfo")).isNull();
     assertThat(variable.get("_embedded")).isNull();
     Map<String, Map<String, String>> links = (Map<String, Map<String, String>>) variable.get("_links");

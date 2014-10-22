@@ -28,6 +28,7 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.impl.variable.serializer.JavaObjectSerializer;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
 import org.camunda.bpm.engine.rest.helper.MockVariableInstanceBuilder;
+import org.camunda.bpm.engine.rest.helper.VariableTypeHelper;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
 import org.camunda.bpm.engine.variable.Variables;
@@ -79,7 +80,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     .and()
       .body("id", equalTo(builder.getId()))
       .body("name", equalTo(builder.getName()))
-      .body("type", equalTo(builder.getTypedValue().getType().getName()))
+      .body("type", equalTo(VariableTypeHelper.toExpectedValueTypeName(builder.getTypedValue().getType())))
       .body("value", equalTo(builder.getTypedValue().getValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("executionId", equalTo(builder.getExecutionId()))
@@ -110,7 +111,7 @@ public class AbstractVariableInstanceRestServiceInteractionTest extends Abstract
     given().pathParam("id", MockProvider.EXAMPLE_VARIABLE_INSTANCE_ID)
     .then().expect().statusCode(Status.OK.getStatusCode())
     .and()
-      .body("type", equalTo(ValueType.BYTES.getName()))
+      .body("type", equalTo(VariableTypeHelper.toExpectedValueTypeName(ValueType.BYTES)))
       .body("value", nullValue())
     .when().get(VARIABLE_INSTANCE_URL);
 

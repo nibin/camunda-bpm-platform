@@ -12,6 +12,14 @@
  */
 package org.camunda.bpm.engine.rest.dto.converter;
 
+import java.io.IOException;
+
+import javax.ws.rs.core.Response.Status;
+
+import org.apache.wink.common.RestException;
+import org.camunda.bpm.engine.rest.exception.InvalidRequestException;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 /**
@@ -25,5 +33,19 @@ public abstract class JacksonAwareStringToTypeConverter<T> implements StringToTy
 
   public void setObjectMapper(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
+  }
+
+  protected T mapToType(String value, Class<T> typeClass) {
+    try {
+      return objectMapper.readValue(value, typeClass);
+    } catch (JsonParseException e) {
+      throw new InvalidRequestException(Status.BAD_REQUEST, e, String.format("Cannot convert value %s to java type %s",
+          value, typeClass.getName()));
+    } catch (JsonMappingException e) {
+      throw new InvalidRequestException(Status.BAD_REQUEST, e, String.format("Cannot convert value %s to java type %s",
+          value, typeClass.getName()));
+    } catch (IOException e) {
+      throw new RestException(e);
+    }
   }
 }

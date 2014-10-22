@@ -59,6 +59,7 @@ public class JobRestServiceImpl extends AbstractRestProcessEngineAware
 	public List<JobDto> queryJobs(JobQueryDto queryDto, Integer firstResult,
 			Integer maxResults) {
 		ProcessEngine engine = getProcessEngine();
+		queryDto.setObjectMapper(getObjectMapper());
 		JobQuery query = queryDto.toQuery(engine);
 
 		List<Job> matchingJobs;
@@ -85,6 +86,7 @@ public class JobRestServiceImpl extends AbstractRestProcessEngineAware
   @Override
   public CountResultDto queryJobsCount(JobQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     JobQuery query = queryDto.toQuery(engine);
 
     long count = query.count();

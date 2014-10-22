@@ -45,6 +45,7 @@ import org.camunda.bpm.engine.rest.helper.ErrorMessageHelper;
 import org.camunda.bpm.engine.rest.helper.ExampleVariableObject;
 import org.camunda.bpm.engine.rest.helper.MockObjectValue;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.VariableTypeHelper;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsNullValue;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsObjectValue;
 import org.camunda.bpm.engine.rest.helper.variable.EqualsPrimitiveValue;
@@ -195,7 +196,7 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
       .body(EXAMPLE_VARIABLE_KEY, notNullValue())
       .body(EXAMPLE_VARIABLE_KEY + ".value.property1", equalTo("aPropertyValue"))
       .body(EXAMPLE_VARIABLE_KEY + ".value.property2", equalTo(true))
-      .body(EXAMPLE_VARIABLE_KEY + ".type", equalTo(ValueType.OBJECT.getName()))
+      .body(EXAMPLE_VARIABLE_KEY + ".type", equalTo(VariableTypeHelper.toExpectedValueTypeName(ValueType.OBJECT)))
       .body(EXAMPLE_VARIABLE_KEY + ".valueInfo." + ObjectTypeImpl.VALUE_INFO_OBJECT_TYPE_NAME, equalTo(ExampleVariableObject.class.getName()))
       .body(EXAMPLE_VARIABLE_KEY + ".valueInfo." + ObjectTypeImpl.VALUE_INFO_SERIALIZATION_DATA_FORMAT, equalTo("application/json"))
       .when().get(PROCESS_INSTANCE_VARIABLES_URL);
@@ -826,7 +827,7 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
     .when()
       .put(SINGLE_PROCESS_INSTANCE_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableLocal(
+    verify(runtimeServiceMock).setVariable(
         eq(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID), eq(variableKey),
         argThat(EqualsObjectValue.objectValueMatcher()
           .serializedValue(serializedValue)
@@ -866,7 +867,7 @@ public abstract class AbstractProcessInstanceRestServiceInteractionTest extends
       .then().expect().statusCode(Status.NO_CONTENT.getStatusCode())
       .when().put(SINGLE_PROCESS_INSTANCE_VARIABLE_URL);
 
-    verify(runtimeServiceMock).setVariableLocal(
+    verify(runtimeServiceMock).setVariable(
         eq(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID), eq(variableKey),
         argThat(EqualsObjectValue.objectValueMatcher()));
   }

@@ -47,7 +47,7 @@ public class VariableListConverter extends
         throw new InvalidRequestException(Status.BAD_REQUEST, "variable query parameter has to have format KEY_OPERATOR_VALUE.");
       }
 
-      VariableQueryParameterDto queryVariable = new VariableQueryParameterDto(objectMapper);
+      VariableQueryParameterDto queryVariable = new VariableQueryParameterDto();
       queryVariable.setName(valueTriple[0]);
       queryVariable.setOperator(valueTriple[1]);
       queryVariable.setValue(valueTriple[2]);

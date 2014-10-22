@@ -286,7 +286,7 @@ public class ProcessDefinitionResourceImpl implements ProcessDefinitionResource 
     }
   }
 
-  public Map<String, VariableValueDto> getFormVariables(String variableNames) {
+  public Map<String, VariableValueDto> getFormVariables(String variableNames, boolean deserializeValues) {
 
     final FormService formService = engine.getFormService();
     List<String> formVariables = null;
@@ -296,7 +296,7 @@ public class ProcessDefinitionResourceImpl implements ProcessDefinitionResource 
       formVariables = stringListConverter.convertQueryParameterToType(variableNames);
     }
 
-    VariableMap startFormVariables = formService.getStartFormVariables(processDefinitionId, formVariables, false);
+    VariableMap startFormVariables = formService.getStartFormVariables(processDefinitionId, formVariables, deserializeValues);
 
     return VariableValueDto.fromVariableMap(startFormVariables);
   }

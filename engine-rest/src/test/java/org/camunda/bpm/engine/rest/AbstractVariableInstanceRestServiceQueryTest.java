@@ -24,6 +24,7 @@ import javax.xml.registry.InvalidRequestException;
 
 import org.camunda.bpm.engine.rest.helper.MockProvider;
 import org.camunda.bpm.engine.rest.helper.MockVariableInstanceBuilder;
+import org.camunda.bpm.engine.rest.helper.VariableTypeHelper;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
 import org.junit.Assert;
@@ -222,7 +223,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
           .body("size()", is(1))
           .body("[0].id", equalTo(mockInstanceBuilder.getId()))
           .body("[0].name", equalTo(mockInstanceBuilder.getName()))
-          .body("[0].type", equalTo(mockInstanceBuilder.getTypeName()))
+          .body("[0].type", equalTo(VariableTypeHelper.toExpectedValueTypeName(mockInstanceBuilder.getTypedValue().getType())))
           .body("[0].value", equalTo(mockInstanceBuilder.getValue()))
           .body("[0].processInstanceId", equalTo(mockInstanceBuilder.getProcessInstanceId()))
           .body("[0].executionId", equalTo(mockInstanceBuilder.getExecutionId()))
@@ -250,6 +251,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
     verify(mockedQuery, never()).disableObjectValueDeserialization();
   }
 
+
   @Test
   public void testVariableInstanceRetrievalAsPost() {
     String queryVariableName = "aVariableInstanceName";
@@ -262,7 +264,7 @@ public abstract class AbstractVariableInstanceRestServiceQueryTest extends Abstr
           .body("size()", is(1))
           .body("[0].id", equalTo(mockInstanceBuilder.getId()))
           .body("[0].name", equalTo(mockInstanceBuilder.getName()))
-          .body("[0].type", equalTo(mockInstanceBuilder.getTypeName()))
+          .body("[0].type", equalTo(VariableTypeHelper.toExpectedValueTypeName(mockInstanceBuilder.getTypedValue().getType())))
           .body("[0].value", equalTo(mockInstanceBuilder.getTypedValue().getValue()))
           .body("[0].processInstanceId", equalTo(mockInstanceBuilder.getProcessInstanceId()))
           .body("[0].executionId", equalTo(mockInstanceBuilder.getExecutionId()))

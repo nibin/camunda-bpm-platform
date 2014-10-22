@@ -16,6 +16,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.ws.rs.core.Response.Status;
+
 import org.camunda.bpm.engine.impl.QueryOperator;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -24,14 +26,8 @@ import org.codehaus.jackson.map.ObjectMapper;
  */
 public class ConditionQueryParameterDto {
 
-  protected ObjectMapper objectMapper;
-
   public ConditionQueryParameterDto() {
 
-  }
-
-  public ConditionQueryParameterDto(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
   }
 
   public static final String EQUALS_OPERATOR_NAME = "eq";
@@ -71,18 +67,23 @@ public class ConditionQueryParameterDto {
   public void setOperator(String operator) {
     this.operator = operator;
   }
-  public Object getValue() {
-    return value;
-  }
-  public void setValue(Object value) {
+  public Object resolveValue(ObjectMapper objectMapper) {
     if (value instanceof String && objectMapper != null) {
       try {
-        this.value = objectMapper.readValue((String) value, Date.class);
+        return objectMapper.readValue("\"" + value + "\"", Date.class);
       } catch (Exception e) {
-        // ignore (apparently the string is not formated as a valid date)
+        // ignore the exception
       }
     }
 
+    return value;
+  }
+
+  public Object getValue() {
+    return value;
+  }
+
+  public void setValue(Object value) {
     this.value = value;
   }
 

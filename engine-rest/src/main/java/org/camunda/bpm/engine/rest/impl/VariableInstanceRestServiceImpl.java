@@ -52,6 +52,7 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
   @Override
   public List<VariableInstanceDto> queryVariableInstances(VariableInstanceQueryDto queryDto, Integer firstResult, Integer maxResults, boolean deserializeObjectValues) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     VariableInstanceQuery query = queryDto.toQuery(engine);
 
     // disable binary fetching by default.
@@ -96,6 +97,7 @@ public class VariableInstanceRestServiceImpl extends AbstractRestProcessEngineAw
   @Override
   public CountResultDto queryVariableInstancesCount(VariableInstanceQueryDto queryDto) {
     ProcessEngine engine = getProcessEngine();
+    queryDto.setObjectMapper(getObjectMapper());
     VariableInstanceQuery query = queryDto.toQuery(engine);
 
     long count = query.count();

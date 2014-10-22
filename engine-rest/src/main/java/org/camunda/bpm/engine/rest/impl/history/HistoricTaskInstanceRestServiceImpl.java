@@ -48,6 +48,7 @@ public class HistoricTaskInstanceRestServiceImpl implements HistoricTaskInstance
 
   @Override
   public List<HistoricTaskInstanceDto> queryHistoricTaskInstances(HistoricTaskInstanceQueryDto queryDto, Integer firstResult, Integer maxResults) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricTaskInstanceQuery query = queryDto.toQuery(processEngine);
 
     List<HistoricTaskInstance> match;
@@ -83,6 +84,7 @@ public class HistoricTaskInstanceRestServiceImpl implements HistoricTaskInstance
 
   @Override
   public CountResultDto queryHistoricTaskInstancesCount(HistoricTaskInstanceQueryDto queryDto) {
+    queryDto.setObjectMapper(objectMapper);
     HistoricTaskInstanceQuery query = queryDto.toQuery(processEngine);
 
     long count = query.count();

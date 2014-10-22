@@ -129,6 +129,7 @@ public class AuthorizationRestServiceImpl extends AbstractAuthorizedRestResource
 
   public List<AuthorizationDto> queryAuthorizations(AuthorizationQueryDto queryDto, Integer firstResult, Integer maxResults) {
 
+    queryDto.setObjectMapper(getObjectMapper());
     AuthorizationQuery query = queryDto.toQuery(getProcessEngine());
 
     List<Authorization> resultList;
