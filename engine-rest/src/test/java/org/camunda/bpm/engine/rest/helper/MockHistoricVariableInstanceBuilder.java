@@ -119,6 +119,8 @@ public class MockHistoricVariableInstanceBuilder {
     when(mockVariable.getErrorMessage()).thenReturn(errorMessage);
     when(mockVariable.getActivtyInstanceId()).thenReturn(activityInstanceId);
     when(mockVariable.getActivityInstanceId()).thenReturn(activityInstanceId);
+    when(mockVariable.getTypeName()).thenReturn(value.getType().getName());
+    when(mockVariable.getVariableTypeName()).thenReturn(value.getType().getName());
 
     return mockVariable;
   }
