@@ -32,6 +32,7 @@ public class HistoricActivityInstanceRestServiceImpl implements HistoricActivity
   protected ProcessEngine processEngine;
 
   public HistoricActivityInstanceRestServiceImpl(ObjectMapper objectMapper, ProcessEngine processEngine) {
+    this.objectMapper = objectMapper;
     this.processEngine = processEngine;
   }
 

@@ -112,6 +112,7 @@ public class MockHistoricVariableUpdateBuilder {
     when(mockVariable.getActivityInstanceId()).thenReturn(activityInstanceId);
     when(mockVariable.getTaskId()).thenReturn(taskId);
     when(mockVariable.getExecutionId()).thenReturn(executionId);
+    when(mockVariable.getTypeName()).thenReturn(typedValue.getType().getName());
 
     return mockVariable;
   }

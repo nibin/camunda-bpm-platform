@@ -66,7 +66,7 @@ public class HistoricDetailResourceImpl implements HistoricDetailResource {
 
       HistoricVariableUpdate update = (HistoricVariableUpdate) historicDetail;
 
-      if (update.getTypeName().equals(ValueType.BYTES.getName())) {
+      if (ValueType.BYTES.getName().equals(update.getTypeName())) {
         byte[] valueBytes = (byte[]) update.getValue();
         if (valueBytes == null) {
           valueBytes = new byte[0];

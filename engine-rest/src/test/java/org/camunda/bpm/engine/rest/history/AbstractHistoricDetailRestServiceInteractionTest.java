@@ -29,6 +29,7 @@ import org.camunda.bpm.engine.history.HistoricVariableUpdate;
 import org.camunda.bpm.engine.rest.AbstractRestServiceTest;
 import org.camunda.bpm.engine.rest.helper.MockHistoricVariableUpdateBuilder;
 import org.camunda.bpm.engine.rest.helper.MockProvider;
+import org.camunda.bpm.engine.rest.helper.VariableTypeHelper;
 import org.camunda.bpm.engine.variable.Variables;
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,7 +78,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     .and()
       .body("id", equalTo(builder.getId()))
       .body("variableName", equalTo(builder.getName()))
-      .body("variableType", equalTo(builder.getTypedValue().getType().getName()))
+      .body("variableType", equalTo(VariableTypeHelper.toExpectedValueTypeName(builder.getTypedValue().getType())))
       .body("value", equalTo(builder.getValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
@@ -110,7 +111,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     .and()
       .body("id", equalTo(builder.getId()))
       .body("variableName", equalTo(builder.getName()))
-      .body("variableType", equalTo(builder.getTypedValue().getType().getName()))
+      .body("variableType", equalTo(VariableTypeHelper.toExpectedValueTypeName(builder.getTypedValue().getType())))
       .body("value", equalTo(builder.getValue()))
       .body("processInstanceId", equalTo(builder.getProcessInstanceId()))
       .body("errorMessage", equalTo(builder.getErrorMessage()))
@@ -171,32 +172,6 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
   }
 
   @Test
-  public void testBinaryDataForSerializableVariable() {
-    String serializedValue = "some bytes";
-
-    HistoricVariableUpdate detailMock =
-        MockProvider.mockHistoricVariableUpdate()
-          .typedValue(Variables.serializedObjectValue(serializedValue).create())
-          .build();
-
-    when(historicDetailQueryMock.detailId(detailMock.getId())).thenReturn(historicDetailQueryMock);
-    when(historicDetailQueryMock.disableBinaryFetching()).thenReturn(historicDetailQueryMock);
-    when(historicDetailQueryMock.disableCustomObjectDeserialization()).thenReturn(historicDetailQueryMock);
-    when(historicDetailQueryMock.singleResult()).thenReturn(detailMock);
-
-    Response response = given().pathParam("id", MockProvider.EXAMPLE_HISTORIC_VAR_UPDATE_ID)
-    .then().expect()
-      .statusCode(Status.OK.getStatusCode())
-      .contentType(ContentType.BINARY.toString())
-    .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
-
-    Assert.assertEquals(serializedValue, response.getBody().asString());
-    verify(historicDetailQueryMock, never()).disableBinaryFetching();
-    verify(historicDetailQueryMock).disableCustomObjectDeserialization();
-
-  }
-
-  @Test
   public void testBinaryDataForNonBinaryVariable() {
     HistoricVariableUpdate detailMock =  MockProvider.createMockHistoricVariableUpdate();
 
@@ -207,7 +182,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
     given().pathParam("id", MockProvider.EXAMPLE_HISTORIC_VAR_UPDATE_ID)
     .then().expect()
       .statusCode(Status.BAD_REQUEST.getStatusCode())
-      .body(containsString("Value is not a binary value"))
+      .body(containsString("Value of variable aHistoricVariableUpdateId is not a binary value"))
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     verify(historicDetailQueryMock, never()).disableBinaryFetching();
@@ -225,7 +200,7 @@ public abstract class AbstractHistoricDetailRestServiceInteractionTest extends A
 
     given().pathParam("id", nonExistingId)
     .then().expect().statusCode(Status.NOT_FOUND.getStatusCode())
-    .body(containsString("Historic detail with Id '"+nonExistingId+"' does not exist"))
+    .body(containsString("Historic detail instance with Id '"+nonExistingId+"' does not exist"))
     .when().get(VARIABLE_INSTANCE_BINARY_DATA_URL);
 
     verify(historicDetailQueryMock, never()).disableBinaryFetching();
