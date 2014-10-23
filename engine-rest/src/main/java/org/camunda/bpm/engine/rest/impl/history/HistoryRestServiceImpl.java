@@ -40,7 +40,7 @@ public class HistoryRestServiceImpl extends AbstractRestProcessEngineAware imple
   }
 
   public HistoricCaseInstanceRestService getCaseInstanceService() {
-    return new HistoricCaseInstanceRestServiceImpl(getProcessEngine());
+    return new HistoricCaseInstanceRestServiceImpl(getObjectMapper(), getProcessEngine());
   }
 
   public HistoricActivityInstanceRestService getActivityInstanceService() {

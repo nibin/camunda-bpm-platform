@@ -1280,7 +1280,7 @@ public abstract class AbstractFilterRestServiceInteractionTest extends AbstractR
     assertThat(variable.get("name")).isEqualTo(name);
     assertThat(variable.get("value")).isEqualTo(value);
     assertThat(variable.get("type")).isEqualTo("String");
-    assertThat(variable.get("valueInfo")).isNull();
+    assertThat(variable.get("valueInfo")).isEqualTo(Collections.emptyMap());
     assertThat(variable.get("_embedded")).isNull();
     Map<String, Map<String, String>> links = (Map<String, Map<String, String>>) variable.get("_links");
     assertThat(links).hasSize(1);
