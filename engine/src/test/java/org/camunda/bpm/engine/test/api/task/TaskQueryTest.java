@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.filter.Filter;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
@@ -1176,7 +1177,7 @@ public class TaskQueryTest extends PluggableProcessEngineTestCase {
     assertEquals(6, taskService.createTaskQuery().orderByTaskId().taskName("testTask").desc().list().size());
   }
 
-  public void FAILING_testQuerySortingByNameShouldBeCaseInsensitive() {
+  public void testQuerySortingByNameShouldBeCaseInsensitive() {
     // create task with capitalized name
     Task task = taskService.newTask("caseSensitiveTestTask");
     task.setName("CaseSensitiveTestTask");
@@ -1186,12 +1187,16 @@ public class TaskQueryTest extends PluggableProcessEngineTestCase {
     Collections.sort(sortedNames, String.CASE_INSENSITIVE_ORDER);
 
     // ascending ordering
-    List<String> ascNames = getTaskNamesFromQuery(taskService.createTaskQuery().orderByTaskName().asc());
+    List<String> ascNames = getTaskNamesFromQuery(taskService.createTaskQuery().orderByTaskNameCaseInsensitive().asc());
     assertEquals(sortedNames, ascNames);
+
+    Filter filter = filterService.newTaskFilter("test");
+    filterService.saveFilter(filter);
+    TaskQuery query = taskService.createTaskQuery().orderByTaskNameCaseInsensitive().asc();
 
     // descending ordering
     Collections.reverse(sortedNames);
-    List<String> descNames = getTaskNamesFromQuery(taskService.createTaskQuery().orderByTaskName().desc());
+    List<String> descNames = getTaskNamesFromQuery(taskService.createTaskQuery().orderByTaskNameCaseInsensitive().desc());
     assertEquals(sortedNames, descNames);
 
     // delete test task
